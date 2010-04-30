@@ -448,7 +448,7 @@ namespace Xna
   let drawBall (gd:GraphicsDevice)  = 
 
         let angles = Seq.toList (seq{for i in 1 .. 11 -> Math.PI*2.0*((float)i)/10.0})
-        let pts = List.map (fun a-> (Vector.rot Vector.unit a) * 0.1) angles
+        let pts = List.map (fun a-> (Vector.rot Vector.unit a) * Bricks.ballRadius) angles
         let n_verts = List.length pts
         let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
         let vertex = Array.init n_verts random_vert
@@ -476,7 +476,7 @@ namespace Xna
           
   type XnaBricks(game : Game -> Bricks.State Behavior) as this =
    inherit XnaTest<Bricks.State>(game)
-   
+         
      override this.Draw gameTime =
         let gd = base.Graphics.GraphicsDevice
         gd.VertexDeclaration <- base.VertexDeclaration
@@ -484,7 +484,7 @@ namespace Xna
    
         do  let t0 = DateTime.Now;
             let nb = (base.Behavior())
-            let ({ball=ball
+            let ({ball=ballOption
                   bricks=bricks
                   xpaddle = xpaddle}, nb) = atB nb (base.Time)
             base.Behavior <- nb
@@ -493,7 +493,9 @@ namespace Xna
             for pass in base.Effect.CurrentTechnique.Passes do
                                 pass.Begin()
                                 List.iter (drawBrick' gd ) bricks
-                                drawBall' gd ball
+                                match ballOption with
+                                |Some ball -> drawBall' gd ball
+                                |None -> ()
                                 drawPaddle' gd xpaddle
                                 pass.End()
             base.Effect.End()
