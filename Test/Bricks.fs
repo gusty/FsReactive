@@ -65,7 +65,6 @@ namespace Xna
     let rot90AntiClockwise (Vector (x,y)) = (Vector (-y, x))
        
     let cross (Vector (xm, ym)) (Vector (x1, y1)) (Vector (x2, y2)) =
-        //printf "%A %A %A\n " (Vector (xm, ym)) (Vector (x1, y1)) (Vector (x2, y2))
         let sign (x:float) = Math.Sign x
         if not (sign y1 = sign y2)
         then    let t = -y1 /(y2 - y1)
@@ -134,22 +133,24 @@ namespace Xna
 
     type Brick = Brick of (int * Vector) // id, x, y
 
-    let mkHits ballRadius bricks pBall ball  = 
-        let proc brick = let pll = brick 
-                         let plr = brick + Vector(brickWidth, 0.0)
-                         let pul = brick + Vector(0.0, brickHeight) 
-                         let pur = brick + Vector(brickWidth, brickHeight) 
-                         crossBox pll plr pul pur pBall ball ballRadius
-        let r = List.map (fun (Brick (id, pos)) -> match proc pos with
-                                                   |Some f -> (Some (id, f))
-                                                   |None -> None) bricks
-        let r' = catOption r
-        r'
+    let mkHits ballRadius bricks pBallOption ballOption  = 
+        match pBallOption, ballOption with
+        |Some pBall, Some ball ->
+            let proc brick = let pll = brick 
+                             let plr = brick + Vector(brickWidth, 0.0)
+                             let pul = brick + Vector(0.0, brickHeight) 
+                             let pur = brick + Vector(brickWidth, brickHeight) 
+                             crossBox pll plr pul pur pBall ball ballRadius
+            let r = List.map (fun (Brick (id, pos)) ->  match proc pos with
+                                                        |Some f -> (Some (id, f))
+                                                        |None -> None) bricks
+            let r' = catOption r
+            r'
+            |_ -> []
        
     let mkBrick pos hitsB = 
         let id = createId()
         let isHit hits = let r = List.exists (fun (id', _) -> id = id') hits
-                         //printf "hit = %A\n " hits
                          r 
         let isHitE = whenE ((pureB isHit) <$> (hitsB)) --> (noneB())
         let brickB = untilB  (pureB (Some (Brick (id, pos)))) isHitE
@@ -158,26 +159,33 @@ namespace Xna
     let mkBricks hitsB = 
         let brickBs = List.map (fun pos -> mkBrick (Vector pos) hitsB) bricksCoord
         dyncolB brickBs NoneE
-
-    let mkVelocity v0 hitsB ballB xPaddleB = 
+         
+    let mkVelocity v0 hitsB ballB xPaddleB ballRadius = 
         let applyB = (pureB (fun f b -> f b))
-        let hitWall (Vector (x, y)) xPaddle= 
-            match (x <= -1.0 || x>= 1.0, (y <= paddleY && xPaddle-paddleHalfLength <= x && x <= xPaddle+paddleHalfLength) || y>= 1.0) with
-            |(false, false) -> None
-            |(true, false) -> Some (fun v -> (Vector.rot v (randRange -0.01 0.01)) |> invX)
-            |(false, true) -> Some (fun v -> (Vector.rot v (randRange -0.01 0.01)) |> invY)
-            |(true, true) -> Some Vector.neg
+        let hitWallx (Vector (x, y))  = 
+            match (x <= -1.0 || x>= 1.0) with
+            |(false) -> None
+            |(true) -> Some (fun v -> (Vector.rot v (randRange -0.01 0.01)) |> invX)
+        let hitWally (Vector (x, y)) xPaddle= 
+            match ((y-ballRadius <= paddleY && xPaddle-paddleHalfLength <= x && x <= xPaddle+paddleHalfLength) || y>= 1.0) with
+            |(false) -> None
+            |(true) -> Some (fun v -> (Vector.rot v (randRange -0.01 0.01)) |> invY)
         let hitBricks hits =
             List.fold (fun acc (_, f) ->
                             match acc with
                             |None -> Some f
                             |Some acc -> Some (acc >> f))None hits
-        let hitWallE = whenAnyE ((pureB hitWall) <$> ballB <$> xPaddleB)
+        let hitWallxE = whenAnyE ((pureB hitWallx) <$> ballB)
+        let hitWallyE = whenAnyE ((pureB hitWally) <$> ballB <$> xPaddleB)
         let hitBrickE = whenAnyE ((pureB hitBricks) <$> hitsB)
         let comp a b  = a >> b
-        let hitE = orE comp hitWallE hitBrickE
+        let hitE =  orE comp (orE comp hitWallxE hitWallyE) hitBrickE
         let vB = stepAccumB v0 hitE
-        vB
+        let adjust (Vector (x, y)) = let y' =   if  Math.Abs(y) <= 0.2 
+                                                then 0.2 * ((float) (Math.Sign(y)))
+                                                else y
+                                     Vector( x,y')       
+        ((pureB adjust) <$> vB)  
 
      
     let mkPaddle x0 (game:Game) =
@@ -194,45 +202,68 @@ namespace Xna
 
     type State = 
         { 
-            ball:Vector
+            ball:Vector option
             bricks:Brick list
             xpaddle : float
+            nbBalls:int
         }
 
     let rec keyboardInputG key = Beh (fun _ -> ( Keyboard.GetState().IsKeyDown(key), fun () -> keyboardInputG key))
     let rec startCommandB =  (keyboardInputG Keys.Enter .||.  keyboardInputG Keys.Space)
 
-    let game (game:Game) = 
-        let integrate = integrateGenB vectorNumClass
-        let noGame =  {   ball=Vector( 0.0, 0.0)
+    let ballRadius = 0.05
+
+    let rec mkBall xPaddleB hitsB ballRadius x0 t0  = 
+                let integrate = integrateGenB vectorNumClass
+                let xB' = aliasB x0
+                let v0 = (Vector.rot Vector.unit (Math.PI/4.0)) * 1.5
+                let velB = mkVelocity v0 hitsB (fst xB') xPaddleB ballRadius
+                let xB = bindAliasB (integrate velB t0 x0 ) xB' 
+                let xpB = delayB xB ( x0)
+                let ballOutE = whenE ((pureB (fun (Vector(x, y)) -> y <= -1.0  )) <$> xB)
+                let ballB = (coupleB()) <$>  (someizeBf xB) <$> (someizeBf xpB)  //|> tronB "balls option"  
+                           
+                let ballB' = untilB (ballB)
+                                    (ballOutE --> untilB ((coupleB()) <$> (noneB()) <$> (noneB())) 
+                                                         (waitE 2.0 =>> ( fun () -> startB ( mkBall xPaddleB hitsB ballRadius x0))))
+                ballB' 
+
+
+    let rec game (theGgame:Game) = 
+        let noGame =  {   ball=Some (Vector( 0.0, 0.0))
                           bricks=[]
-                          xpaddle = 0.0}
-        let rec startGame t0  = 
-            
-            let xPaddleB = mkPaddle 0.0 game
-            let bricksB' = aliasB []
+                          xpaddle = 0.0
+                          nbBalls = 3}
+        
+        let rec startGame t0 = 
             let x0 = (Vector.zero)
-            let xB' = aliasB x0
-            let xpB = delayB (fst xB') x0 
+
+            let xPaddleB = mkPaddle 0.0 theGgame
             let hitsB' = aliasB []
-            let hitsB = bindAliasB ((pureB (mkHits 0.1)) <$> (fst bricksB') <$> xpB <$> (fst xB') ) hitsB'
-            let bricksB =  bindAliasB (mkBricks (fst hitsB')) bricksB'
-            let v0 = (Vector.rot Vector.unit (Math.PI/4.0)) * 1.0
-            let velB = mkVelocity v0 hitsB (fst xB') xPaddleB
-            let xB = bindAliasB (integrate velB t0 x0) xB'
-            let endGameE = whenE ((pureB (fun (Vector(x, y)) -> y <= -1.0)) <$>  xB)
+            let ballB =  mkBall xPaddleB (fst hitsB') ballRadius x0 t0 |> memoB
+            let xB =  (pureB fst) <$> ballB   |>memoB      //|> tronB ""
+            let xpB = (pureB snd) <$> ballB    
+
+            let bricksB' = aliasB []
+            let hitsB = bindAliasB ((pureB (mkHits ballRadius)) <$> (fst bricksB') <$> xpB <$> xB )  hitsB'
+            let bricksB =  bindAliasB (mkBricks hitsB) bricksB'
             let gameB = (pureB (fun ball bricks xpaddle -> 
                                     {   ball=ball
                                         bricks=bricks
-                                        xpaddle = xpaddle})) <$> xB <$> bricksB <$> xPaddleB
+                                        xpaddle = xpaddle
+                                        nbBalls = 0 })) <$> xB <$> bricksB <$> xPaddleB
             gameB
-        let rec proc() = 
-            let  mkGame t0 = let stateB = startGame t0
-                             let endGameE = whenE ((pureB (fun {ball=(Vector(x, y))} -> y <= -1.0)) <$>  stateB)
-                             untilB stateB (endGameE =>> proc)
+        let rec proc () = 
+            let  mkGame t0 = let stateB = (startGame t0) 
+                             // let endGameE = whenE ((pureB (fun state -> state.ball = None)) <$>  stateB)
+                             stateB
             untilB (pureB noGame)
                    (whenE (startCommandB) --> (startB mkGame))
-        proc()
+        let stateB = proc()  |> memoB
+        let decrBallNbE = whenE ((pureB (fun state -> state.ball=None)) <$> stateB) --> (fun x -> x-1) 
+        let nbBallsB = stepAccumB 3 decrBallNbE  // |> tronB "balls " 
+        untilB stateB (whenE (nbBallsB .<=. (pureB 0)) =>> fun () -> game(theGgame))
+        
 
 
         (*

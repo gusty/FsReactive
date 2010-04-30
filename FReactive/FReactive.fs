@@ -231,15 +231,15 @@ namespace FReactive
                      (proc ra rb, fun() -> nea()  .|. neb() )
     Evt (bf ea eb)
 
- let rec orE comp ea eb = 
+ let  orE comp ea eb = 
     let proc ra rb = match (ra, rb) with
                      |(Some a , Some b) -> Some (comp a b)
                      |(Some _ , None) -> ra
                      |(None , Some _) -> rb
                      |(None , None) -> None
-    let bf ea eb t = let (ra, nea) = atE ea t
-                     let (rb, neb) = atE eb t
-                     (proc ra rb, fun() -> nea()  .|. neb() )
+    let rec bf ea eb t = let (ra, nea) = atE ea t
+                         let (rb, neb) = atE eb t
+                         (proc ra rb, fun() -> Evt (bf (nea()) (neb())) )
     Evt (bf ea eb)
 
 
