@@ -14,7 +14,8 @@ namespace Spring
   open Microsoft.Xna.Framework
   open Microsoft.Xna.Framework.Graphics
   open Microsoft.Xna.Framework.Input
- 
+  
+
   let (.*) a b = (pureB (*)) <$> a <$> b 
   let (.-) a b = (pureB (-)) <$> a <$> b 
   let (.+) a b = (pureB (+)) <$> a <$> b 
@@ -25,7 +26,7 @@ namespace Spring
   
   let mainGame (game:Game) = 
         let condxf = pureB (fun x -> x <= (-1.0) || x >= 1.0)
-        let condyf = pureB (fun y -> y <= (-1.0) || y >= 1.0)
+       // let condyf = pureB (fun y -> y <= (-1.0) || y >= 1.0)
         let sidef f = pureB (fun x -> f x
                                       x)
 
@@ -34,22 +35,46 @@ namespace Spring
         let mousePosB  = stepB (0.0, 0.0) mousePosEvt
         let mousePosXB = pureB fst <$> mousePosB
         let mousePosYB = pureB snd <$> mousePosB
+
+        let mkVelocity t0 v0 accB hitE =
+            let rec proc t0 v0 e0 = 
+                let v0' = e0 t0 v0
+                let v = integrate accB t0 v0'
+                let fE = hitE --> (fun _ v -> -v)
+                Disc (v, fE, proc)
+            discontinuityE (proc t0 v0 (fun _ v -> -v))
+
         let rec sys t0 x0 vx0 mousePosXB = 
             let x' = aliasB x0
-            let vx' = aliasB vx0
-            let accx =  pureB 1.0 .* (mousePosXB .- (fst x')) .- (pureB 0.05 .* (fst vx')) 
-            let vx = bindAliasB (integrate accx t0 vx0 ) vx'
-            let rec condxE = snapshotE (whenE (condxf <$> (fst x')))
-                                       (pureB triple <$> timeB <$> (fst x') <$> vx)
-                                =>> (fun (_, (t0, x0, vx0)) -> sys t0 x0 (-vx0) mousePosXB)
+            let vx' = aliasB x0
+            let hitE = whenE (condxf <$> (fst x'))
+            let accxB =  pureB 1.0 .* (mousePosXB .- (fst x')) .- (pureB 0.05 .* (fst vx')) 
+            let vx = bindAliasB (mkVelocity t0 vx0 accxB hitE) vx'
                             
-            let x = switchB (bindAliasB (integrate vx t0 x0 ) x') condxE
-           // let x = (bindAliasB (integrate vx t0 x0 ) x') 
+            let x =  (bindAliasB (integrate vx t0 x0 ) x') 
             x 
-        coupleB() <$> (sys 0.0 0.5 0.0  mousePosXB) <$> (sys 0.0 0.5 0.0 mousePosYB) |>  tronB "x=" 
+        coupleB() <$> (sys 0.0 0.5 0.0  mousePosXB) <$> (sys 0.0 0.5 0.0 mousePosYB) // |>  tronB "x=" 
 
 
+   (*     
+    let mkMovement t0 x0 velocityB =
+        let integrate = integrateGenB vectorNumClass
+        let rec proc t0 x0 e0 = 
+            let x0' = e0 t0 x0
+            let x = integrate velocityB t0 x0'
+            let boxE = (whileE ((pureB (inBoxPred >> not)) <$> x)) --> (fun _ x -> adaptToBox x)
+            Disc (x, boxE, proc)
+        discontinuityE (proc t0 x0 (fun _ x -> adaptToBox x))
 
+ type Discontinuity<'a, 'b> = Disc of ('a Behavior *  (Time -> 'a -> 'b) Event * (Time -> 'a -> (Time -> 'a -> 'b) ->  Discontinuity<'a, 'b>))
+    
+ let rec discontinuityE (Disc (xB, predE, bg))  = 
+        let evt = snapshotE predE ((coupleB() <$> timeB <$> xB))  =>>  
+                        (fun (e,(t,vb)) -> let disc = bg t vb e
+                                           discontinuityE disc)
+        untilB xB evt
+
+        *)
   let renderer (x, y) (gd:GraphicsDevice) = 
         let n_verts = 2
         let random_vert _ = Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
