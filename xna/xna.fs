@@ -185,7 +185,7 @@ namespace Xna
 
 
             *)
-
+(*
   type XnaSpring(game : Game -> (float*float) Behavior) as this =
    inherit XnaTest<(float*float)>(game)
 
@@ -213,7 +213,7 @@ namespace Xna
             gd.DrawUserPrimitives(prim, vertex, 0, n_verts/2)
             pass.End()
         base.Effect.End()
-
+*)
 (*
   type XnaPaddle(game : Game -> Paddle.State Behavior) as this =
    inherit XnaTest<Paddle.State>(game)

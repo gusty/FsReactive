@@ -116,7 +116,7 @@ namespace FReactive
 // switchB
 
 // val switchB : 'a Behavior -> 'a Behavior Event -> 'a Behavior
-
+(*
  let rec switchB b e =
    let bf t = let (r,nb) = atB b t
               let proc() = match atE e t with
@@ -124,6 +124,15 @@ namespace FReactive
                            |(Some newB, ne) -> switchB newB (ne())
               (r, proc)           
    Beh bf
+   *)
+ let rec switchB b e =
+   let rec bf b e t = let (r,nb) = atB b t
+                      let (re, ne) = atE e t
+                      let proc() = match re with
+                                   |None -> Beh ( bf (nb()) (ne()))
+                                   |Some newB -> Beh ( bf newB (ne()))
+                      (r, proc)           
+   Beh (bf b e)
 
 // val switchRestartB : 'a Behavior -> 'a Behavior Event -> 'a Behavior
    

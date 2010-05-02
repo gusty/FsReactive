@@ -16,7 +16,7 @@ namespace Paddle
 
   open Microsoft.Xna.Framework
   open Microsoft.Xna.Framework.Graphics
-  open Microsoft.Xna.Framework.Input;
+  open Microsoft.Xna.Framework.Input
 
   let paddleHalfLength = 0.1
   let paddleY = -0.95
