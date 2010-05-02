@@ -1,6 +1,5 @@
 ﻿#light
 
-// #r @"..\FReactive\obj\Debug\FReactive.dll"
 
 namespace Asteroids
 

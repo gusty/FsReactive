@@ -5,14 +5,14 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{553b6fc5-92c9-46d4-af19-12ca813b6aee}</ProjectGuid>
+    <ProjectGuid>f7d934c3-292c-439f-b709-f97be9663e29</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Paddle</RootNamespace>
-    <AssemblyName>Paddle</AssemblyName>
+    <RootNamespace>Spring</RootNamespace>
+    <AssemblyName>Spring</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
-    <Name>Paddle</Name>
+    <Name>Spring</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -23,7 +23,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
-    <BaseIntermediateOutputPath>C:\Users\jcm\Documents\projects\FReactive\obj\Paddle\Debug</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>C:\Users\jcm\Documents\projects\FReactive\objSpring\Debug</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
@@ -35,7 +35,7 @@
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <OutputPath>C:\Users\jcm\Documents\projects\FReactive\bin\Paddle\Debug\</OutputPath>
+    <OutputPath>C:\Users\jcm\Documents\projects\FReactive\bin\Spring\Debug\</OutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Xna.Framework">
@@ -51,8 +51,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Rendering.fs" />
-    <Compile Include="Paddle.fs" />
+    <Compile Include="Spring.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.fsproj">
