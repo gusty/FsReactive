@@ -129,3 +129,14 @@ namespace FReactive
             let E2 = (someE ()) =>> (fun () -> periodicB period)
             let E1 = (waitE period) --> ( untilB (pureB true) E2)
             untilB (pureB false) E1
+
+ let mapOptionB f = pureB (mapOption f)
+ let someizeBf b = (pureB Some) <$> b
+    
+ let delayB b v0 = 
+        let rec bf b v0 t = let (r, nb) = atB b t
+                            (v0, fun () -> Beh (bf (nb()) r))
+        Beh (bf b v0)
+
+
+ 

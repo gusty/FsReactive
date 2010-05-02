@@ -5,60 +5,46 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{de82ade7-0d16-4cb5-84ff-dff49701531f}</ProjectGuid>
+    <ProjectGuid>{d9e07920-e4dd-4fcf-8569-10ca382bbb12}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>FExemples</RootNamespace>
-    <AssemblyName>FExemples</AssemblyName>
+    <RootNamespace>Common</RootNamespace>
+    <AssemblyName>Common</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Name>FExemples</Name>
+    <Name>Common</Name>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
+    <Tailcalls>false</Tailcalls>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
+    <Tailcalls>true</Tailcalls>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <OutputPath>C:\Users\jcm\Documents\projects\FReactive\bin\Common\Debug\</OutputPath>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="FSharp.Core" />
     <Reference Include="mscorlib" />
+    <Reference Include="FSharp.Core" />
     <Reference Include="System" />
-    <Reference Include="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
+    <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Exemple1.fs" />
-    <None Include="Script.fsx" />
-    <Compile Include="Exemple2.fs" />
-    <Compile Include="xna.fs" />
-    <Compile Include="A.fs" />
+    <Compile Include="Vector.fs" />
+    <Compile Include="Random.fs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FReactive\FReactive.fsproj">
-      <Name>FReactive</Name>
-      <Project>{f1227606-ce8d-42d1-9ebe-9e5db6fbfceb}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\Graphic\Graphic.fsproj">
-      <Name>Graphic</Name>
-      <Project>{e62d811f-f87f-4266-a2ec-1865874f6c1d}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(ProgramFiles)\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
+  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.
 	<Target Name="BeforeBuild">
