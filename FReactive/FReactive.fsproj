@@ -31,6 +31,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <OutputPath>C:\Users\jcm\Documents\projects\FReactive\bin\FReactive\Debug\</OutputPath>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core" />
     <Reference Include="mscorlib" />

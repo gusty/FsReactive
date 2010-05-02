@@ -1,10 +1,8 @@
 ﻿#light
 
-// #r @"..\FReactive\obj\Debug\FReactive.dll"
+namespace Bricks
 
-namespace Xna
-
-  module Bricks =
+  module Game =
            
     open FReactive.Misc
     open FReactive.FReactive
@@ -12,22 +10,16 @@ namespace Xna
     open FReactive.DynCol
     open FReactive.Lib
     open System
-    open Vector
+    open Common.Vector
+    open Common.Random
+    open Rendering
+    open Xna.Main
     
     open Microsoft.Xna.Framework
     open Microsoft.Xna.Framework.Graphics
     open Microsoft.Xna.Framework.Input;
-    
-    let rand = new System.Random();
-    
-    let randAngle() = rand.NextDouble() * 2.0*Math.PI
-    
-    let randX() = 2.0 * rand.NextDouble() - 1.0
+   
 
-    let randRange min max = min + rand.NextDouble() * (max-min)
-
-    let randVector() = Vector(randX(), randX())
-    
     let vectorNumClass = 
         {   plus = curry Vector.(+);
             minus = curry Vector.(-);
@@ -35,31 +27,12 @@ namespace Xna
             div = curry Vector.(/);
             neg = Vector.neg
         }
-
     // some general purpose utility function    
     let (.*) a b = (pureB vectorNumClass.mult) <$> a <$> b 
     let (./) a b = (pureB vectorNumClass.div) <$> a <$> b 
     let (.+) a b = (pureB vectorNumClass.plus) <$> a <$> b 
     let (.-) a b = (pureB vectorNumClass.minus) <$> a <$> b 
     
-    let mapOptionB f = pureB (mapOption f)
-    let someizeBf b = (pureB Some) <$> b
-    
-    let delayB b v0 = 
-        let rec bf b v0 t = let (r, nb) = atB b t
-                            (v0, fun () -> Beh (bf (nb()) r))
-        Beh (bf b v0)
-
-
-
-    let mousePos (game:Game) () = 
-        let (xm, ym) = let ms = Mouse.GetState() in ((float)ms.X, (float)ms.Y)
-        let (xw, yw, ww, hw) = let cb = game.Window.ClientBounds
-                               ((float)cb.X, (float)cb.Y, (float)cb.Width, (float)cb.Height)
-        let (xmo, ymo) = (2.0*(xm)/ww-1.0, 1.0-2.0*(ym)/hw)
-        if (xmo < -1.0 || 1.0 < xmo || ymo < -1.0 || 1.0 < ymo) 
-        then None
-        else Some (xmo, ymo)
 
     let rot90Clockwise (Vector (x,y)) = (Vector (y, -x))
     let rot90AntiClockwise (Vector (x,y)) = (Vector (-y, x))
@@ -228,8 +201,17 @@ namespace Xna
                                                          (waitE 2.0 =>> ( fun () -> startB ( mkBall xPaddleB hitsB ballRadius x0))))
                 ballB' 
 
-    
-
+    let render {ball=ballOption
+                bricks=bricks
+                xpaddle = xpaddle} (gd:GraphicsDevice) = 
+        let drawBrick'  (Brick (_, (Vector(x, y)))) = drawBrick x y   
+        let drawBall' (Vector(x, y)) = drawBall x y ballRadius 
+        let drawPaddle' x paddleY paddleHalfLength = drawPaddle x paddleY paddleHalfLength 
+        List.iter (fun brick -> drawBrick' brick gd )  bricks
+        match ballOption with
+        |Some ball -> drawBall' ball gd 
+        |None -> ()
+        drawPaddle' xpaddle paddleY paddleHalfLength gd 
 
     let rec game (theGgame:Game) = 
         let noGame =  {   ball=Some (Vector( 0.0, 0.0))
@@ -257,102 +239,18 @@ namespace Xna
             gameB
         let rec proc () = 
             let  mkGame t0 = let stateB = (startGame t0) 
-                             // let endGameE = whenE ((pureB (fun state -> state.ball = None)) <$>  stateB)
                              stateB
             untilB (pureB noGame)
                    (whenE (startCommandB) --> (startB mkGame))
         let stateB = proc()  |> memoB
         let decrBallNbE = whenE ((pureB (fun state -> state.ball=None)) <$> stateB) --> (fun x -> x-1) 
         let nbBallsB = stepAccumB 3 decrBallNbE  // |> tronB "balls " 
-        untilB stateB (whenE (nbBallsB .<=. (pureB 0)) =>> fun () -> game(theGgame))
+        let stateB' = (pureB render) <$> stateB
+        let stateB'' = untilB stateB' (whenE (nbBallsB .<=. (pureB 0)) =>> fun () -> game(theGgame))
+        stateB''
+
         
 
+    do use game = new XnaTest2(game)
+       game.Run()
 
-        (*
-
-
-
-            let ballRadius = 0.005;
-            let paddleY = -0.95;
-            let paddleHalfLength = 0.1;
-
-            let condxf = pureB (fun x -> x <= (-1.0) || x >= 1.0)
-            let condyf = pureB (fun x y xpad -> y >= 1.0 || ((xpad - paddleHalfLength) <= x && x <= (xpad + paddleHalfLength)
-                                                             &&  y <= (paddleY+ballRadius)))
-            let condyf' = pureB (fun x y xpad -> y >= 1.0 ||  y <= (-1.0))
-            let condExitYf = pureB (fun y -> printf "exit = %A\n" y 
-                                             y <= (-1.0))
-           
-            let mousePos = mousePos game
-            let rec mousePosEvt = Evt (fun _ -> (mousePos(), fun() -> mousePosEvt))
-            let mousePosB  = stepB (0.0, 0.0) mousePosEvt
-            let mousePosXB =  pureB  (fun x -> if x - paddleHalfLength < -1.0 
-                                               then  (-1.0 )
-                                               else if x - paddleHalfLength > 1.0
-                                                    then 1.0 
-                                                    else x)
-                              <$> (pureB fst <$> mousePosB)
-            let rec sys t0 xball0 yball0 xpad0 mousePosXB = 
-                let xpad = mousePosXB
-                let xball' = aliasB xball0
-                let yball' = aliasB yball0
-                let rec condxE = (whenE (condxf <$> (fst xball'))) --> (fun x -> -x)
-                let vballx = stepAccumB (0.3) condxE
-                let rec condyE = (whenE (condyf <$> (fst xball') <$> (fst yball') <$> xpad)) --> (fun x -> printf "r\n"
-                                                                                                           -x)
-                //let rec condyE = (whenE (condyf <$> (fst yball'))) --> (fun x -> printf "r\n" 
-                 //                                                                -x)
-                let vbally = stepAccumB (-0.45) condyE
-
-                let xball = memoB ( bindAliasB (integrate vballx t0   xball0) xball' )
-                let yball = memoB ( bindAliasB (integrate vbally  t0 yball0) yball' )
-                let state = (pureB (fun xb yb xp -> State {xball = xb ; yball = yb ; xpaddle = xp}))
-                             <$> xball <$> yball <$> xpad
-                let condeExitE =  (whenE (condExitYf <$> yball)) =>> (fun _ -> printf "stop\n" 
-                                                                               pureB End)
-                untilB state condeExitE
-                //state
-            sys 0.0 0.0 0.0 0.0 mousePosXB
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    type HitDir = VertHit|HorHit
-
-    let hitBrick (xb, yb) (xp,yp) (x, y) = 
-        let xor a b = (a || b) && not (a && b) 
-        let xmin = xb
-        let xmax = xb + brickWidth
-        let ymin = yb
-        let ymax = yb + brickHeight
-
-        let inPred (xb, yb) (x,y) = (xb <= xmin && x <= xmax && ymin <= y && x <= ymax)
-        let cross  xmin xmax yb xp yp x y = xmin <= xp && xp <= xmax && xmin <= x && x <= xmax &&  (yp <= yb && yb < y) 
-        let cross' b v = if b then Some v else None
-        if  not (inPred (xb, yb) (xp, yp)) && (inPred (xb, yb) (x, y)) 
-        then let preds = 
-                let crossP = cross 
-                List.map (uncurry cross')
-                        [(cross xmin xmax ymin xp yp x y, VertHit);
-                         (cross xmin xmax -ymax xp -yp x -y, VertHit);
-                         (cross ymin ymax xmin yp xp y x, HorHit);
-                         (cross ymin ymax -xmax yp -xp y -x, HorHit)]
-             let r = List.filter isSome preds
-             match r with
-             |[] -> None
-             |h::_ -> h
-        else None
-
-        *)
