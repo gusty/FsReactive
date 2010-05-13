@@ -12,6 +12,8 @@ namespace Common
     
     let randX() = 2.0 * rand.NextDouble() - 1.0
 
+    let random() = rand.NextDouble()
+
     let randRange min max = min + rand.NextDouble() * (max-min)
 
     let randVector() = Vector(randX(), randX())
