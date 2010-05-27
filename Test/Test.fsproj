@@ -6,7 +6,7 @@
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{ae1cf92a-cf04-429c-b69d-b06cf4318369}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <RootNamespace>Test</RootNamespace>
     <AssemblyName>Test</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
@@ -44,17 +44,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Vector.fs" />
-    <Compile Include="Asteroids.fs" />
-    <Compile Include="gas.fs" />
-    <Compile Include="Bricks.fs" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\FReactive\FReactive.fsproj">
       <Name>FReactive</Name>
       <Project>{f1227606-ce8d-42d1-9ebe-9e5db6fbfceb}</Project>
       <Private>True</Private>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Test.fs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
