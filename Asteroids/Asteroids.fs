@@ -140,23 +140,19 @@ namespace Asteroids
                 |Some (nml, hit) -> (hit::hits, nml) 
                 |None -> state             
             let hits = List.fold proc' ([], meteors) bullets |> fst 
+            if not (List.isEmpty hits) 
+            then printf "hit\n"
+            else ()
             hits
         memoB <| (pureB detect) <$> meteorsB <$> bulletsB
 
         
-    let rec untilB' b e =
-        let bf t =  let (r, nb) = atB b t
-                    let proc() = match atE e t with
-                                 |(None, ne) -> untilB' (nb()) (ne())
-                                 |(Some newB, ne) -> newB
-                    (r, proc)
-        Beh bf
     // create a meteor that can be destroyed 
     let rec mkBreakableMeteor meteorB hitsB =
         let hitPred (Meteor (id, _, _)) hits = List.exists (fun ((Meteor (idb, _, _)), _) -> let r = id = idb
                                                                                              r) hits
         let hitE = whenE ((pureB hitPred) <$> meteorB <$> hitsB) --> (noneB())
-        let breakableMeteorB =  untilB' (someizeBf meteorB) hitE
+        let breakableMeteorB =  untilB (someizeBf meteorB) hitE
         breakableMeteorB
 
         
@@ -180,7 +176,7 @@ namespace Asteroids
         let ageE = (whenE (timeB .-. (pureB t0) .>. (pureB bulletLifeTime)) --> (noneB()))
         let hitPred (Bullet (id, _)) hits = List.exists (fun (_,  (Bullet (idb, _))) -> id = idb) hits
         let hitE = whenE ((pureB hitPred) <$> bulletB <$> hitsB) --> (noneB())
-        let bulletB' = memoB (untilB (someizeBf bulletB) (ageE .|. hitE))
+        let bulletB' =  memoB (untilB (someizeBf bulletB) (ageE .|. hitE))
         bulletB'
         
 
@@ -273,7 +269,7 @@ namespace Asteroids
                                              match r with
                                              |0 -> None
                                              |incr -> Some (fun x -> x + incr))) <$> hitsB
-        let scoreB = stepAccumB 0 (whenAnyE incrScoreB)
+        let scoreB = stepAccumB 0 (whenBehaviorE incrScoreB)
         scoreB
 
 
@@ -342,7 +338,7 @@ namespace Asteroids
 
             let meteorCreatorE = snapshotBehaviorOnlyE (someE ())  (mkMeteorGenerator (fst meteorsB') shipB shieldB thereAreMeteorsE nbNewMeteorsB (fst hitsB'))
             let meteorsB = bindAliasB (dyncolB  mkMeteors meteorCreatorE)  meteorsB'
-            let delayedMeteorsB = untilB (pureB []) (waitE 2.0 --> ( meteorsB))
+            let delayedMeteorsB =  untilB (pureB []) (waitE 2.0 --> ( meteorsB))
 
             let bulletsB = (dyncolB [] (mkFire shipB  (fst hitsB'))) 
         
@@ -361,10 +357,12 @@ namespace Asteroids
                                                 <$> shieldB)
             let endGameE = whenE ((pureB (fun m -> m.nbShips = 0 && not (isSome m.ship) && not (isSome m.destroyedShip))) <$> stateB)
             let newGameE = (whenE fireCommandB) =>> (fun () -> startGame 0.0)
-            let stateB' = untilB stateB (endGameE --> untilB (pureB standbyGame) newGameE)
+            let stateB' = untilB stateB (endGameE --> untilB (pureB standbyGame) newGameE) |> memoB
             seqB hitB 
-                 <| (seqB hitsB
-                          <| (seqB nbNewMeteorsB stateB'))
+                 <| (seqB hitsB 
+                          <| seqB nbNewMeteorsB stateB')
+            
+            
         untilB (pureB standbyGame) ((whenE fireCommandB) =>> (fun() -> startGame 0.0))
 
     let renderer {  nbShips = nbShips

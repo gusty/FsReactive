@@ -20,20 +20,6 @@ namespace FReactive
  let atB (Beh bf) = bf
  let atE (Evt bf) = bf
 
- let rec runList b l  =
-    match l with
-    |[] -> []
-    |h::t -> let (r, nb) = atB b h
-             r:: runList (nb()) t
-            
- let runAll (Beh bf) tmax =
-    let rec proc (Beh bf) t =
-        let (_, nb) = bf t
-        if (t>tmax)
-        then ()
-        else proc (nb()) (t+1.0)
-    let (r, nb) = bf 1.0
-    proc (nb())  1.0
 
 // memoization of Behaviors
 
@@ -46,25 +32,14 @@ namespace FReactive
                       (r, nb)
     let rec bf   t = match !cache with
                      |Some (t0, r) when t=t0 -> (r, fun () -> resB)
+                     |Some (t0, r) when t<t0 -> failwith "error"
                      |_ ->  match compute !bref t with
                             (r, nb) ->  (r, fun () -> bref := nb()
                                                       resB)
     and resB = Beh bf
     resB
+
     
- let memoB' b =
-    let cache = ref None
-    let bref = ref (fun()->b)
-    let compute b t = let (r, nb) = atB b t
-                      cache := Some (t, r);
-                      (r, nb)
-    let rec bf   t = match !cache with
-                     |Some (t0, r) when t=t0 -> (r, resB)
-                     |_ ->  match compute ((!bref)()) t with
-                            (r, nb) ->  bref := nb
-                                        (r, resB)
-    and resB() = Beh bf
-    resB()
 
  let memoE b =
     let cache = ref None
@@ -74,6 +49,7 @@ namespace FReactive
                       (r, nb)
     let rec bf   t = match !cache with
                      |Some (t0, r) when t=t0 -> (r, resB)
+                     |Some (t0, r) when t<t0 -> failwith "error"
                      |_ ->  match compute b t with
                             (r, nb) -> bref := nb
                                        (r, resB)
@@ -103,73 +79,38 @@ namespace FReactive
 
 //Some common Behaviors
 
+// timeB : Time Behavior
+
  let rec timeB = Beh (fun t -> (t, fun() -> timeB))
  
- 
+// deltaTimeB : Time -> Behavior 
+
  let deltaTimeB t0 = 
     let rec bf t0 t = (t-t0, fun() -> Beh (bf t))
     Beh (bf t0) 
-                    
                      
 
 
-// switchB
+// switchB : 'a Behavior -> 'a Behavior Event -> 'a Behavior
 
-// val switchB : 'a Behavior -> 'a Behavior Event -> 'a Behavior
-(*
- let rec switchB b e =
-   let bf t = let (r,nb) = atB b t
-              let proc() = match atE e t with
-                           |(None, ne) -> switchB (nb()) (ne())
-                           |(Some newB, ne) -> switchB newB (ne())
-              (r, proc)           
-   Beh bf
-   *)
  let rec switchB b e =
    let rec bf b e t = let (r,nb) = atB b t
-                      let (re, ne) = atE e t
-                      let proc() = match re with
+                      let proc() = let (re, ne) = atE e t
+                                   match re with
                                    |None -> Beh ( bf (nb()) (ne()))
                                    |Some newB -> Beh ( bf newB (ne()))
                       (r, proc)           
    Beh (bf b e)
 
-// val switchRestartB : 'a Behavior -> 'a Behavior Event -> 'a Behavior
-   
- let rec switchRestartB b e =
-   let rec bf b e t = let (r,nb) = atB b t
-                      let proc() = match atE e t with
-                                   |(None, ne) -> switchRestartB (nb()) (ne())
-                                   |(Some newB, ne) -> Beh (bf2 (nb()) newB (ne()))
-                      (r, proc)           
-   and bf2 pb newb e t = let (r,nb) = atB newb t
-                         (r, fun () -> Beh (bf pb e))           
-   Beh (bf b e)
-
-
 // val untilB : 'a Behavior -> 'a Behavior Event -> 'a Behavior
 
  let rec untilB b e =
     let     bf t =  let (r, nb) = atB b t
-                    let proc() = match atE e t with
-                                 |(None, ne) -> untilB (nb()) (ne())
-                                 |(Some newB, ne) -> newB
+                    let proc() = let (re, ne) = atE e t
+                                 match re with
+                                 |None -> untilB (nb()) (ne())
+                                 |Some newB -> newB
                     (r, proc)
-    Beh bf
-
- let rec untilB2 b e =
-    let     bf t =  let (r, nb) = atB b t
-                    match atE e t with
-                    |(None, ne) -> (r, fun () -> untilB2 (nb()) (ne()))
-                    |(Some newB, ne) -> (r, fun() -> newB)
-    Beh bf
-
- let rec untilImmediateB b e =
-    let     bf t =  match atE e t with
-                    |(None, ne) -> let (r, nb) = atB b t
-                                   (r, fun () -> untilImmediateB (nb()) (ne()))
-                    |(Some newB, ne) -> let (r, nb) = atB newB t
-                                        (r, fun () -> nb())
     Beh bf
 
 // events
@@ -202,20 +143,15 @@ namespace FReactive
                          |None -> (None, fun() -> Evt (bf (nevt()) (nb()) ))
     Evt (bf evt b)
 
-// val snapshotE : 'a Event -> 'b Behavior -> ('a * 'b) Event
+// val snapshotBehaviorOnlyE : 'a Event -> 'b Behavior -> 'b Event
 
  let rec snapshotBehaviorOnlyE evt b = snapshotE evt b =>> (fun (_, x) -> x)
- 
- 
- let rec withTimeE evt = snapshotE evt timeB
-   
-    
+     
 // val stepB : 'a -> 'a Event -> 'a Behavior
 
  let stepB (a:'a) (evt:'a Event) = switchB (pureB a) (evt =>> pureB)
 
  
-
 // val stepAccumB : 'a -> ('a -> 'a) Event -> 'a Behavior
 
  let rec stepAccumB a evt = 
@@ -239,6 +175,9 @@ namespace FReactive
                      let (rb, neb) = atE eb t
                      (proc ra rb, fun() -> nea()  .|. neb() )
     Evt (bf ea eb)
+
+
+// orE : ('a -> 'a -> 'a) -> 'a Event -> 'a Event -> 'a Event
 
  let  orE comp ea eb = 
     let proc ra rb = match (ra, rb) with
@@ -303,7 +242,6 @@ namespace FReactive
  let whenE b =
     let rec bf b previous t = 
         let (r,nb) = atB b t
-        //printfn "%A %A" previous r
         match (previous, r) with
         |(false, true) -> (Some (), fun() -> Evt (bf (nb()) r))
         |(false, false) -> (None, fun() -> Evt (bf (nb()) r))
@@ -312,9 +250,9 @@ namespace FReactive
     Evt (bf b false)
 
 
-// val whenAnyE : 'a option Behavior -> 'a Event
+// val whenBehaviorE : 'a option Behavior -> 'a Event
 
- let whenAnyE b =
+ let whenBehaviorE b =
     let rec bf b previous t = 
         let (r,nb) = atB b t
         match (previous, r) with

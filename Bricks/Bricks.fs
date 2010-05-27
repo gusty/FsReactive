@@ -148,9 +148,9 @@ namespace Bricks
                             match acc with
                             |None -> Some f
                             |Some acc -> Some (acc >> f))None hits
-        let hitWallxE = whenAnyE ((pureB hitWallx) <$> ballB)
-        let hitWallyE = whenAnyE ((pureB hitWally) <$> ballB <$> xPaddleB)
-        let hitBrickE = whenAnyE ((pureB hitBricks) <$> hitsB)
+        let hitWallxE = whenBehaviorE ((pureB hitWallx) <$> ballB)
+        let hitWallyE = whenBehaviorE ((pureB hitWally) <$> ballB <$> xPaddleB)
+        let hitBrickE = whenBehaviorE ((pureB hitBricks) <$> hitsB)
         let comp a b  = a >> b
         let hitE =  orE comp (orE comp hitWallxE hitWallyE) hitBrickE
         let vB = stepAccumB v0 hitE
