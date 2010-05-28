@@ -44,22 +44,22 @@ namespace Paddle
                                                else if x - paddleHalfLength > 1.0
                                                     then 1.0 
                                                     else x)
-                              <$> (pureB fst <$> mousePosB)
+                              <.> (pureB fst <.> mousePosB)
             let rec sys t0 xball0 yball0 xpad0 mousePosXB = 
                 let xpad = mousePosXB
                 let xball' = aliasB xball0
                 let yball' = aliasB yball0
-                let rec condxE = (whenE (condxf <$> (fst xball'))) --> (fun x -> -x)
+                let rec condxE = (whenE (condxf <.> (fst xball'))) --> (fun x -> -x)
                 let vballx = stepAccumB (0.3) condxE
-                let rec condyE = (whenE (condyf <$> (fst xball') <$> (fst yball') <$> xpad)) --> (fun x -> printf "r\n"
+                let rec condyE = (whenE (condyf <.> (fst xball') <.> (fst yball') <.> xpad)) --> (fun x -> printf "r\n"
                                                                                                            -x)
                 let vbally = stepAccumB (-0.45) condyE
 
                 let xball = memoB ( bindAliasB (integrate vballx t0   xball0) xball' )
                 let yball = memoB ( bindAliasB (integrate vbally  t0 yball0) yball' )
                 let state = (pureB (fun xb yb xp -> State {xball = xb ; yball = yb ; xpaddle = xp}))
-                             <$> xball <$> yball <$> xpad
-                let condeExitE =  (whenE (condExitYf <$> yball)) =>> (fun _ -> printf "stop\n" 
+                             <.> xball <.> yball <.> xpad
+                let condeExitE =  (whenE (condExitYf <.> yball)) =>> (fun _ -> printf "stop\n" 
                                                                                pureB End)
                 untilB state condeExitE
             sys 0.0 0.0 0.0 0.0 mousePosXB
@@ -73,7 +73,7 @@ namespace Paddle
    
   let renderedGame (game:Game) = 
         let stateB = mainGame game
-        (pureB renderer) <$> stateB 
+        (pureB renderer) <.> stateB 
 
   do use game = new XnaTest2(renderedGame)
      game.Run() 

@@ -10,12 +10,12 @@ namespace Common
 
     let randAngle() = rand.NextDouble() * 2.0*Math.PI
     
-    let randX() = 2.0 * rand.NextDouble() - 1.0
+    let randUnity() = 2.0 * rand.NextDouble() - 1.0
 
     let random() = rand.NextDouble()
 
     let randRange min max = min + rand.NextDouble() * (max-min)
 
-    let randVector() = Vector(randX(), randX())
+    let randVector() = Vector(randUnity(), randUnity())
     
 
