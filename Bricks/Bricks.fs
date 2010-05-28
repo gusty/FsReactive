@@ -28,10 +28,10 @@ namespace Bricks
             neg = Vector.neg
         }
     // some general purpose utility function    
-    let (.*) a b = (pureB vectorNumClass.mult) <$> a <$> b 
-    let (./) a b = (pureB vectorNumClass.div) <$> a <$> b 
-    let (.+) a b = (pureB vectorNumClass.plus) <$> a <$> b 
-    let (.-) a b = (pureB vectorNumClass.minus) <$> a <$> b 
+    let (.*) a b = (pureB vectorNumClass.mult) <.> a <.> b 
+    let (./) a b = (pureB vectorNumClass.div) <.> a <.> b 
+    let (.+) a b = (pureB vectorNumClass.plus) <.> a <.> b 
+    let (.-) a b = (pureB vectorNumClass.minus) <.> a <.> b 
     
 
     let rot90Clockwise (Vector (x,y)) = (Vector (y, -x))
@@ -125,7 +125,7 @@ namespace Bricks
         let id = createId()
         let isHit hits = let r = List.exists (fun (id', _) -> id = id') hits
                          r 
-        let isHitE = whenE ((pureB isHit) <$> (hitsB)) --> (noneB())
+        let isHitE = whenE ((pureB isHit) <.> (hitsB)) --> (noneB())
         let brickB = untilB  (pureB (Some (Brick (id, pos)))) isHitE
         brickB
 
@@ -148,9 +148,9 @@ namespace Bricks
                             match acc with
                             |None -> Some f
                             |Some acc -> Some (acc >> f))None hits
-        let hitWallxE = whenBehaviorE ((pureB hitWallx) <$> ballB)
-        let hitWallyE = whenBehaviorE ((pureB hitWally) <$> ballB <$> xPaddleB)
-        let hitBrickE = whenBehaviorE ((pureB hitBricks) <$> hitsB)
+        let hitWallxE = whenBehaviorE ((pureB hitWallx) <.> ballB)
+        let hitWallyE = whenBehaviorE ((pureB hitWally) <.> ballB <.> xPaddleB)
+        let hitBrickE = whenBehaviorE ((pureB hitBricks) <.> hitsB)
         let comp a b  = a >> b
         let hitE =  orE comp (orE comp hitWallxE hitWallyE) hitBrickE
         let vB = stepAccumB v0 hitE
@@ -158,7 +158,7 @@ namespace Bricks
                                                 then 0.2 * ((float) (Math.Sign(y)))
                                                 else y
                                      Vector( x,y')       
-        ((pureB adjust) <$> vB)  
+        ((pureB adjust) <.> vB)  
 
      
     let mkPaddle x0 (game:Game) =
@@ -170,7 +170,7 @@ namespace Bricks
                                            else if x - paddleHalfLength > 1.0
                                                 then 1.0 
                                                 else x)
-                              <$> (pureB fst <$> mousePosB)
+                              <.> (pureB fst <.> mousePosB)
         mousePosXB
 
     type State = 
@@ -193,11 +193,11 @@ namespace Bricks
                 let velB = mkVelocity v0 hitsB (fst xB') xPaddleB ballRadius
                 let xB = bindAliasB (integrate velB t0 x0 ) xB' 
                 let xpB = delayB xB ( x0)
-                let ballOutE = whenE ((pureB (fun (Vector(x, y)) -> y <= -1.0  )) <$> xB)
-                let ballB = (coupleB()) <$>  (someizeBf xB) <$> (someizeBf xpB)  //|> tronB "balls option"  
+                let ballOutE = whenE ((pureB (fun (Vector(x, y)) -> y <= -1.0  )) <.> xB)
+                let ballB = (coupleB()) <.>  (someizeBf xB) <.> (someizeBf xpB)  //|> tronB "balls option"  
                            
                 let ballB' = untilB (ballB)
-                                    (ballOutE --> untilB ((coupleB()) <$> (noneB()) <$> (noneB())) 
+                                    (ballOutE --> untilB ((coupleB()) <.> (noneB()) <.> (noneB())) 
                                                          (waitE 2.0 =>> ( fun () -> startB ( mkBall xPaddleB hitsB ballRadius x0))))
                 ballB' 
 
@@ -225,17 +225,17 @@ namespace Bricks
             let xPaddleB = mkPaddle 0.0 theGgame
             let hitsB' = aliasB []
             let ballB =  mkBall xPaddleB (fst hitsB') ballRadius x0 t0 |> memoB
-            let xB =  (pureB fst) <$> ballB   |>memoB      //|> tronB ""
-            let xpB = (pureB snd) <$> ballB    
+            let xB =  (pureB fst) <.> ballB   |>memoB      //|> tronB ""
+            let xpB = (pureB snd) <.> ballB    
 
             let bricksB' = aliasB []
-            let hitsB = bindAliasB ((pureB (mkHits ballRadius)) <$> (fst bricksB') <$> xpB <$> xB )  hitsB'
+            let hitsB = bindAliasB ((pureB (mkHits ballRadius)) <.> (fst bricksB') <.> xpB <.> xB )  hitsB'
             let bricksB =  bindAliasB (mkBricks hitsB) bricksB'
             let gameB = (pureB (fun ball bricks xpaddle -> 
                                     {   ball=ball
                                         bricks=bricks
                                         xpaddle = xpaddle
-                                        nbBalls = 0 })) <$> xB <$> bricksB <$> xPaddleB
+                                        nbBalls = 0 })) <.> xB <.> bricksB <.> xPaddleB
             gameB
         let rec proc () = 
             let  mkGame t0 = let stateB = (startGame t0) 
@@ -243,9 +243,9 @@ namespace Bricks
             untilB (pureB noGame)
                    (whenE (startCommandB) --> (startB mkGame))
         let stateB = proc()  |> memoB
-        let decrBallNbE = whenE ((pureB (fun state -> state.ball=None)) <$> stateB) --> (fun x -> x-1) 
+        let decrBallNbE = whenE ((pureB (fun state -> state.ball=None)) <.> stateB) --> (fun x -> x-1) 
         let nbBallsB = stepAccumB 3 decrBallNbE  // |> tronB "balls " 
-        let stateB' = (pureB render) <$> stateB
+        let stateB' = (pureB render) <.> stateB
         let stateB'' = untilB stateB' (whenE (nbBallsB .<=. (pureB 0)) =>> fun () -> game(theGgame))
         stateB''
 

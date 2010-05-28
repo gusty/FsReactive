@@ -45,10 +45,10 @@ namespace Asteroids
         Vector (proc x, proc y) 
 
     // some general purpose utility function    
-    let (.*) a b = (pureB vectorNumClass.mult) <$> a <$> b 
-    let (./) a b = (pureB vectorNumClass.div) <$> a <$> b 
-    let (.+) a b = (pureB vectorNumClass.plus) <$> a <$> b 
-    let (.-) a b = (pureB vectorNumClass.minus) <$> a <$> b 
+    let (.*) a b = (pureB vectorNumClass.mult) <.> a <.> b 
+    let (./) a b = (pureB vectorNumClass.div) <.> a <.> b 
+    let (.+) a b = (pureB vectorNumClass.plus) <.> a <.> b 
+    let (.-) a b = (pureB vectorNumClass.minus) <.> a <.> b 
     
     // movement
 
@@ -57,7 +57,7 @@ namespace Asteroids
         let rec proc t0 x0 e0 = 
             let x0' = e0 t0 x0
             let x = integrate velocityB t0 x0'
-            let boxE = (whileE ((pureB (inBoxPred >> not)) <$> x)) --> (fun _ x -> adaptToBox x)
+            let boxE = (whileE ((pureB (inBoxPred >> not)) <.> x)) --> (fun _ x -> adaptToBox x)
             Disc (x, boxE, proc)
         discontinuityE (proc t0 x0 (fun _ x -> adaptToBox x))
 
@@ -85,12 +85,12 @@ namespace Asteroids
     let rec jetB = 
         let e = (loopE (whenE (periodicB 0.025)) [JetSmall; JetMedium; JetBig]) =>> snd
         let b = stepB JetSmall e
-        (pureB (fun thrust jet -> if thrust then Some jet else None)) <$> thrustCommandB <$> b
+        (pureB (fun thrust jet -> if thrust then Some jet else None)) <.> thrustCommandB <.> b
 
     // ship angle 
     let mkVelocityAngle rightTurnB leftTurnB t0 (angle:float) increment = 
         let proc b = if b then increment else 0.0
-        let angleVelocity = (((pureB proc) <$> leftTurnB) .-. ((pureB proc) <$> rightTurnB))
+        let angleVelocity = (((pureB proc) <.> leftTurnB) .-. ((pureB proc) <.> rightTurnB))
         memoB <| (integrate angleVelocity t0 angle)
         
     // shield command
@@ -114,12 +114,12 @@ namespace Asteroids
             match ship with
             |Some (Ship (_, shipPos, _, _)) -> shield && Vector.length (meteorPos - shipPos) < 0.2 
             |None -> false
-        let rec shieldContactE = (whenE ((pureB shieldContact) <$> shipB <$> (fst meteorPos') <$> shieldB)) --> (fun x -> Vector.neg x)
+        let rec shieldContactE = (whenE ((pureB shieldContact) <.> shipB <.> (fst meteorPos') <.> shieldB)) --> (fun x -> Vector.neg x)
         let meteorVelocityB = stepAccumB meteorVelocity shieldContactE |> memoB
         
         let meteorPos = bindAliasB (mkMovement t0 x0 meteorVelocityB) meteorPos'
         let meteorB =   let id = (createId())
-                        (pureB (fun x -> Meteor (id, x, msize))) <$> meteorPos
+                        (pureB (fun x -> Meteor (id, x, msize))) <.> meteorPos
         meteorB
 
     
@@ -144,14 +144,14 @@ namespace Asteroids
             then printf "hit\n"
             else ()
             hits
-        memoB <| (pureB detect) <$> meteorsB <$> bulletsB
+        memoB <| (pureB detect) <.> meteorsB <.> bulletsB
 
         
     // create a meteor that can be destroyed 
     let rec mkBreakableMeteor meteorB hitsB =
         let hitPred (Meteor (id, _, _)) hits = List.exists (fun ((Meteor (idb, _, _)), _) -> let r = id = idb
                                                                                              r) hits
-        let hitE = whenE ((pureB hitPred) <$> meteorB <$> hitsB) --> (noneB())
+        let hitE = whenE ((pureB hitPred) <.> meteorB <.> hitsB) --> (noneB())
         let breakableMeteorB =  untilB (someizeBf meteorB) hitE
         breakableMeteorB
 
@@ -164,7 +164,7 @@ namespace Asteroids
             match ship with
             |Some ship -> List.tryFind (hitPred ship) meteors
             |None -> None
-        (pureB detect) <$> shipB <$> meteorsB
+        (pureB detect) <.> shipB <.> meteorsB
   
 
     // create a bullet option with the initial position = x0 at time = t0 with the velocity = bulletVelocityB.
@@ -172,10 +172,10 @@ namespace Asteroids
     let mkBullet t0 x0 bulletVelocityB hitsB =
         let bulletPos = mkMovement t0 x0 bulletVelocityB 
         let bulletB =   let id = (createId())
-                        (pureB (fun pos -> Bullet (id, pos))) <$> bulletPos
+                        (pureB (fun pos -> Bullet (id, pos))) <.> bulletPos
         let ageE = (whenE (timeB .-. (pureB t0) .>. (pureB bulletLifeTime)) --> (noneB()))
         let hitPred (Bullet (id, _)) hits = List.exists (fun (_,  (Bullet (idb, _))) -> id = idb) hits
-        let hitE = whenE ((pureB hitPred) <$> bulletB <$> hitsB) --> (noneB())
+        let hitE = whenE ((pureB hitPred) <.> bulletB <.> hitsB) --> (noneB())
         let bulletB' =  memoB (untilB (someizeBf bulletB) (ageE .|. hitE))
         bulletB'
         
@@ -184,24 +184,24 @@ namespace Asteroids
     // make a new ship     
     let rec mkShipDynamics t0 angleB thrustB nbShipsB hitB =
         let integrate = integrateGenB vectorNumClass
-        let (.* ) (a:Behavior<Vector>) b = (pureB (*)) <$> a <$> b 
-        let (.- ) (a:Behavior<Vector>) b = (pureB (-)) <$> a <$> b 
+        let (.* ) (a:Behavior<Vector>) b = (pureB (*)) <.> a <.> b 
+        let (.- ) (a:Behavior<Vector>) b = (pureB (-)) <.> a <.> b 
         
         let shipVelocityB' = aliasB (Vector.zero)
-        let accB =  ((pureB Vector.rot) <$> thrustB <$> angleB) .-  ((pureB (fun v -> v * shipFriction)) <$> (fst shipVelocityB')) 
+        let accB =  ((pureB Vector.rot) <.> thrustB <.> angleB) .-  ((pureB (fun v -> v * shipFriction)) <.> (fst shipVelocityB')) 
         let shipVelocityB = bindAliasB (integrate accB t0  (Vector.zero)) shipVelocityB'
         
         let shipPositionB' = aliasB (Vector.zero)
         let shipPositionB = bindAliasB (mkMovement t0 (Vector.zero) shipVelocityB) shipPositionB'
         
         let shipB' = aliasB (None)
-        let shipToCreateE = whenE ((pureB (fun nbShips ship -> nbShips > 0 && not (isSome ship))) <$> nbShipsB <$> (fst shipB') )
+        let shipToCreateE = whenE ((pureB (fun nbShips ship -> nbShips > 0 && not (isSome ship))) <.> nbShipsB <.> (fst shipB') )
         let shipToCreateE' =  shipToCreateE =>> 
                               (fun () -> startB (fun t0 ->  let b = mkShipDynamics t0 angleB thrustB nbShipsB hitB
                                                             untilB (noneB()) (waitE newShipCreationDelay --> b )))
-        let destroyedShipE = whenE ((pureB (fun hit -> isSome hit)) <$> hitB) --> (untilB (noneB()) shipToCreateE')
+        let destroyedShipE = whenE ((pureB (fun hit -> isSome hit)) <.> hitB) --> (untilB (noneB()) shipToCreateE')
         let shipB = let id = (createId())
-                    bindAliasB (untilB (someizeBf ((pureB (fun shipPos angle jet -> Ship (id, shipPos, angle, jet))) <$> shipPositionB <$> angleB <$> jetB)) destroyedShipE) shipB'
+                    bindAliasB (untilB (someizeBf ((pureB (fun shipPos angle jet -> Ship (id, shipPos, angle, jet))) <.> shipPositionB <.> angleB <.> jetB)) destroyedShipE) shipB'
         memoB shipB
 
         
@@ -218,7 +218,7 @@ namespace Asteroids
                                         let r = ((mkBullet t0 bulletPos (pureB v) hitsB))
                                         [r]
              |None -> []
-        let newBulletE = snapshotBehaviorOnlyE fireE (coupleB() <$> (shipB) <$> timeB) =>> proc
+        let newBulletE = snapshotBehaviorOnlyE fireE (coupleB() <.> (shipB) <.> timeB) =>> proc
         newBulletE
         
 
@@ -239,7 +239,7 @@ namespace Asteroids
             // meteor split by a bullet hit
             let splitMeteors hits t0 = 
                     List.fold (fun state (meteor,_) -> proc t0 meteor @ state) [] hits
-            let splitMeteorsB =  (((pureB splitMeteors) <$> hitsB <$> timeB))
+            let splitMeteorsB =  (((pureB splitMeteors) <.> hitsB <.> timeB))
             // new set of meteors when all have been destroyed
             let newSetOfMeteors nms ms nbMeteors = 
                     if List.isEmpty nms
@@ -251,9 +251,9 @@ namespace Asteroids
                          else []
                     else []
 
-            let newSetOfMeteorsB = (pureB newSetOfMeteors) <$> splitMeteorsB <$> meteorsB <$> nbNewMeteorsB
+            let newSetOfMeteorsB = (pureB newSetOfMeteors) <.> splitMeteorsB <.> meteorsB <.> nbNewMeteorsB
             let newSetOfMeteorsB' = untilB (pureB []) (waitE 2.0 --> newSetOfMeteorsB)
-            let newSetOfMeteorsE = whenE ((pureB (fun l ->  (List.isEmpty l))) <$> meteorsB)
+            let newSetOfMeteorsE = whenE ((pureB (fun l ->  (List.isEmpty l))) <.> meteorsB)
             let newMeteorsB = untilB splitMeteorsB 
                                      (newSetOfMeteorsE --> newSetOfMeteorsB')
             
@@ -268,7 +268,7 @@ namespace Asteroids
         let incrScoreB = (pureB (fun hits -> let r = List.fold sumScore 0 hits
                                              match r with
                                              |0 -> None
-                                             |incr -> Some (fun x -> x + incr))) <$> hitsB
+                                             |incr -> Some (fun x -> x + incr))) <.> hitsB
         let scoreB = stepAccumB 0 (whenBehaviorE incrScoreB)
         scoreB
 
@@ -276,9 +276,9 @@ namespace Asteroids
     // nb of bonus ship
     let mkBonusShips scoreB  = 
         let minScoreB' = aliasB 2000
-        let incrMinScoreE = whenE ((pureB (fun score minScore -> score >= minScore)) <$> scoreB <$> (fst minScoreB'))
+        let incrMinScoreE = whenE ((pureB (fun score minScore -> score >= minScore)) <.> scoreB <.> (fst minScoreB'))
         let minScoreB = bindAliasB (stepAccumB 2000 (incrMinScoreE --> (fun x -> x+2000))) minScoreB'
-        (pureB (fun s -> s/2000-1)) <$> minScoreB
+        (pureB (fun s -> s/2000-1)) <.> minScoreB
 
     // scale used during a ship explosion
     
@@ -289,11 +289,11 @@ namespace Asteroids
             match shipOption with
             |Some (Ship (_, x, angle, _)) -> 
                                 let scaleB' = startB (fun _ -> scaleB())
-                                let nsB = pureB (fun scale -> Some (DestroyedShip (x, angle, scale))) <$> scaleB'
-                                untilB nsB (whenE ((pureB (fun scale -> scale = 0.0)) <$> scaleB') =>> (fun _ -> mkDestroyedShip shipB hitB))
+                                let nsB = pureB (fun scale -> Some (DestroyedShip (x, angle, scale))) <.> scaleB'
+                                untilB nsB (whenE ((pureB (fun scale -> scale = 0.0)) <.> scaleB') =>> (fun _ -> mkDestroyedShip shipB hitB))
             |None -> noneB()
 
-        let shipExplosionE = (snapshotBehaviorOnlyE (whenE ((pureB (fun hit -> isSome hit)) <$> hitB)) shipB) =>> proc
+        let shipExplosionE = (snapshotBehaviorOnlyE (whenE ((pureB (fun hit -> isSome hit)) <.> hitB)) shipB) =>> proc
         untilB (noneB()) shipExplosionE
 
     type GameState = 
@@ -310,19 +310,19 @@ namespace Asteroids
         let standbyGame = {nbShips = 3; ship = None; meteors = []; bullets = []; score = 0; destroyedShip = None; shieldOn=false}
         let rec startGame t0 = 
             let angleB =  mkVelocityAngle (rightCommandB ) ( leftCommandB) 0.0 1.0 4.0
-            let thrustB = (pureB (fun b -> if b then (Vector (1.25, 0.0)) else (Vector (0.0, 0.0)))) <$> thrustCommandB
+            let thrustB = (pureB (fun b -> if b then (Vector (1.25, 0.0)) else (Vector (0.0, 0.0)))) <.> thrustCommandB
 
             let shipB' = aliasB None
             let hitsB' = aliasB []
             let hitB' = aliasB None
 
             // detect ship creation
-            let createShipE = whenE ((pureB (fun ship -> isSome ship)) <$> (fst shipB'))
+            let createShipE = whenE ((pureB (fun ship -> isSome ship)) <.> (fst shipB'))
 
             let nbShipsB = stepAccumB 3 (createShipE --> (fun n -> n-1))
             let scoreB = mkScore (fst hitsB')
             let bonusShip = mkBonusShips scoreB
-            let nbTotalShipsB = (pureB (+)) <$> nbShipsB <$> bonusShip
+            let nbTotalShipsB = (pureB (+)) <.> nbShipsB <.> bonusShip
 
             let shipB = bindAliasB (mkShipDynamics 0.0 angleB thrustB nbTotalShipsB  (fst hitB')) shipB'
 
@@ -331,7 +331,7 @@ namespace Asteroids
             let mkMeteors = List.map (fun _ -> let meteorB = mkMeteor t0 (randVector()) ((Vector.rot Vector.unit (randAngle())) * nominalMeteorVelocity) MeteorSize.Big shipB shieldB
                                                mkBreakableMeteor meteorB (fst hitsB'))
                                       [] //[1;2;3;4]
-            let thereAreMeteorsE = whenE ((pureB (fun l -> not (List.isEmpty l))) <$> (fst meteorsB'))
+            let thereAreMeteorsE = whenE ((pureB (fun l -> not (List.isEmpty l))) <.> (fst meteorsB'))
             let nbNewMeteorsB  = 
                     let newMeteorsE = ((iterE thereAreMeteorsE [2;3;4;5;6;7;8;9;10;11]) =>> (fun (_, n) -> n))
                     (memoB (stepB 1 newMeteorsE))
@@ -348,14 +348,14 @@ namespace Asteroids
             let destroyedShipB = mkDestroyedShip shipB hitB
 
             let stateB =  memoB ((pureB (fun nbShips ship meteors bullets score destroyedShip shieldOn -> {nbShips = nbShips; ship = ship; meteors = meteors; bullets = bullets; score = score; destroyedShip = destroyedShip; shieldOn= shieldOn}))
-                                                <$> nbTotalShipsB
-                                                <$> shipB 
-                                                <$> delayedMeteorsB
-                                                <$> bulletsB
-                                                <$> scoreB
-                                                <$> destroyedShipB
-                                                <$> shieldB)
-            let endGameE = whenE ((pureB (fun m -> m.nbShips = 0 && not (isSome m.ship) && not (isSome m.destroyedShip))) <$> stateB)
+                                                <.> nbTotalShipsB
+                                                <.> shipB 
+                                                <.> delayedMeteorsB
+                                                <.> bulletsB
+                                                <.> scoreB
+                                                <.> destroyedShipB
+                                                <.> shieldB)
+            let endGameE = whenE ((pureB (fun m -> m.nbShips = 0 && not (isSome m.ship) && not (isSome m.destroyedShip))) <.> stateB)
             let newGameE = (whenE fireCommandB) =>> (fun () -> startGame 0.0)
             let stateB' = untilB stateB (endGameE --> untilB (pureB standbyGame) newGameE) |> memoB
             seqB hitB 
@@ -386,7 +386,7 @@ namespace Asteroids
 
     let renderedGame (game:Game) = 
         let stateB = mainGame game
-        (pureB renderer) <$> stateB 
+        (pureB renderer) <.> stateB 
 
     do use game = new XnaTest2(renderedGame)
        game.Run()

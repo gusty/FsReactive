@@ -10,7 +10,7 @@ namespace FReactive
  
  // 'a option Behavior list -> ['a option Behavior] Event -> 'a list Behavior
 
- let rec dyncolB lb evt = 
+  let rec dyncolB lb evt = 
     let isSome x =  match x with 
                     |None -> false
                     |Some _ -> true
