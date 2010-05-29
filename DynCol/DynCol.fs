@@ -4,11 +4,11 @@ namespace DynCol
 
  module Game = 
   open System
-  open FReactive.Misc
-  open FReactive.FReactive
-  open FReactive.Integration
-  open FReactive.DynCol
-  open FReactive.Lib
+  open FsReactive.Misc
+  open FsReactive.FsReactive
+  open FsReactive.Integration
+  open FsReactive.DynCol
+  open FsReactive.Lib
   open Common.Random
   open Common.Vector
   open Xna.Main

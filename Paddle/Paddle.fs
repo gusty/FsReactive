@@ -6,10 +6,10 @@ namespace Paddle
 
  module Game =
   open System
-  open FReactive.Misc
-  open FReactive.FReactive
-  open FReactive.Integration
-  open FReactive.Lib
+  open FsReactive.Misc
+  open FsReactive.FsReactive
+  open FsReactive.Integration
+  open FsReactive.Lib
   open Paddle.Rendering
   open Common.Random
   open Xna.Main

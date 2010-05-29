@@ -12,7 +12,7 @@
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
-    <Name>xna</Name>
+    <Name>Xna</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -23,7 +23,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
-    <BaseIntermediateOutputPath>C:\Users\jcm\Documents\projects\FReactive\obj\Xna\Debug</BaseIntermediateOutputPath>
+    <!--BaseIntermediateOutputPath>C:\Users\jcm\Documents\projects\FsReactive\obj\Xna\Debug</BaseIntermediateOutputPath-->
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>
@@ -35,7 +35,7 @@
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <OutputPath>C:\Users\jcm\Documents\projects\FReactive\bin\Xna\Debug\</OutputPath>
+    <OutputPath>bin\Debug\</OutputPath>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>
@@ -45,8 +45,12 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Xna.Framework, Version=3.1.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d" />
-    <Reference Include="Microsoft.Xna.Framework.Game, Version=3.1.0.0, Culture=neutral, PublicKeyToken=6d5c3888ef60e27d" />
+    <Reference Include="Microsoft.Xna.Framework">
+      <HintPath>..\Reference\xna\Microsoft.Xna.Framework.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Xna.Framework.Game">
+      <HintPath>..\Reference\xna\Microsoft.Xna.Framework.Game.dll</HintPath>
+    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core" />
     <Reference Include="System" />
@@ -57,14 +61,9 @@
       <Project>{d9e07920-e4dd-4fcf-8569-10ca382bbb12}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\FReactive\FReactive.fsproj">
-      <Name>FReactive</Name>
+    <ProjectReference Include="..\FReactive\FsReactive.fsproj">
+      <Name>FsReactive</Name>
       <Project>{f1227606-ce8d-42d1-9ebe-9e5db6fbfceb}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\Test\Test.fsproj">
-      <Name>Test</Name>
-      <Project>{ae1cf92a-cf04-429c-b69d-b06cf4318369}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
