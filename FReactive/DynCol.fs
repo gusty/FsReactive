@@ -16,7 +16,6 @@ namespace FReactive
                     |Some _ -> true
     let bf t = let (r,nb) = List.unzip (List.filter (fst >> isSome) 
                                                     (List.map (fun b -> atB b t) lb ))
-               //let (re, ne) = atE evt t
                let proc () = let l = List.map (fun x -> x()) nb
                              let (re, ne) = atE evt t
                              let l' = match re with
