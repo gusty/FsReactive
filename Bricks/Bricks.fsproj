@@ -55,7 +55,7 @@
       <Project>{d9e07920-e4dd-4fcf-8569-10ca382bbb12}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\FReactive\FsReactive.fsproj">
+    <ProjectReference Include="..\FsReactive\FsReactive.fsproj">
       <Name>FsReactive</Name>
       <Project>{f1227606-ce8d-42d1-9ebe-9e5db6fbfceb}</Project>
       <Private>True</Private>
