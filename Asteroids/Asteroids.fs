@@ -5,11 +5,11 @@ namespace Asteroids
 
   module Game =
            
-    open FReactive.Misc
-    open FReactive.FReactive
-    open FReactive.Integration
-    open FReactive.DynCol
-    open FReactive.Lib
+    open FsReactive.Misc
+    open FsReactive.FsReactive
+    open FsReactive.Integration
+    open FsReactive.DynCol
+    open FsReactive.Lib
     open System
     open Common.Vector
     open Common.Random
