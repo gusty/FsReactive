@@ -40,7 +40,22 @@ namespace FsReactive
     resB
 
     
+  let memoE b =
+    let cache = ref None
+    let bref = ref b
+    let compute b t = let (r, nb) = atE b t
+                      cache := Some (t, r);
+                      (r, nb)
+    let rec bf   t = match !cache with
+                     |Some (t0, r) when t=t0 -> (r, fun () -> resB)
+                     |Some (t0, r) when t<t0 -> failwith "error"
+                     |_ ->  match compute !bref t with
+                            (r, nb) ->  (r, fun () -> bref := nb()
+                                                      resB)
+    and resB = Evt bf
+    resB
 
+    (*
   let memoE b =
     let cache = ref None
     let bref = ref (fun()->b)
@@ -55,6 +70,7 @@ namespace FsReactive
                                        (r, resB)
     and resB() = Evt bf
     resB()
+    *)
 
 // applicative functor 
     
@@ -136,8 +152,8 @@ namespace FsReactive
 // val snapshotE : 'a Event -> 'b Behavior -> ('a * 'b) Event
 
   let rec snapshotE evt b =
-    let rec bf evt b t = let (re,nevt) = atE evt t
-                         let (r,nb) = atB b t
+    let rec bf evt b t = let (r,nb) = atB b t
+                         let (re,nevt) = atE evt t
                          match re with
                          |Some v -> (Some(v, r), fun() -> Evt (bf (nevt()) (nb()) ))
                          |None -> (None, fun() -> Evt (bf (nevt()) (nb()) ))

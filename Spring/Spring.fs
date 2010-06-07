@@ -26,7 +26,6 @@ namespace Spring
   
   let mainGame (game:Game) = 
         let condxf = pureB (fun x -> x <= (-1.0) || x >= 1.0)
-       // let condyf = pureB (fun y -> y <= (-1.0) || y >= 1.0)
         let sidef f = pureB (fun x -> f x
                                       x)
 
@@ -56,25 +55,6 @@ namespace Spring
         coupleB() <.> (sys 0.0 0.5 0.0  mousePosXB) <.> (sys 0.0 0.5 0.0 mousePosYB) // |>  tronB "x=" 
 
 
-   (*     
-    let mkMovement t0 x0 velocityB =
-        let integrate = integrateGenB vectorNumClass
-        let rec proc t0 x0 e0 = 
-            let x0' = e0 t0 x0
-            let x = integrate velocityB t0 x0'
-            let boxE = (whileE ((pureB (inBoxPred >> not)) <.> x)) --> (fun _ x -> adaptToBox x)
-            Disc (x, boxE, proc)
-        discontinuityE (proc t0 x0 (fun _ x -> adaptToBox x))
-
- type Discontinuity<'a, 'b> = Disc of ('a Behavior *  (Time -> 'a -> 'b) Event * (Time -> 'a -> (Time -> 'a -> 'b) ->  Discontinuity<'a, 'b>))
-    
- let rec discontinuityE (Disc (xB, predE, bg))  = 
-        let evt = snapshotE predE ((coupleB() <.> timeB <.> xB))  =>>  
-                        (fun (e,(t,vb)) -> let disc = bg t vb e
-                                           discontinuityE disc)
-        untilB xB evt
-
-        *)
   let renderer (x, y) (gd:GraphicsDevice) = 
         let n_verts = 2
         let random_vert _ = Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)

@@ -5,14 +5,14 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{9b9cac5f-7ffb-4d07-9a3a-31ad2dd51710}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>xna</RootNamespace>
-    <AssemblyName>xna</AssemblyName>
+    <ProjectGuid>{64681cd7-2120-4bea-b2ae-78c916cfb1ad}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Rectangles</RootNamespace>
+    <AssemblyName>Rectangles</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
-    <Name>xna</Name>
+    <Name>Rectangles</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,39 +33,39 @@
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <OutputPath>\bin\Xna\Debug\</OutputPath>
-  </PropertyGroup>
-  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>
-    <None Include="App.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <Compile Include="Xna.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FsReactive\FsReactive.fsproj">
-      <Name>FsReactive</Name>
-      <Project>{f1227606-ce8d-42d1-9ebe-9e5db6fbfceb}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <Reference Include="Microsoft.Xna.Framework">
-      <HintPath>..\Reference\xna\Microsoft.Xna.Framework.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>C:\Users\jcm\Documents\projects\FsReactive\Reference\xna\Microsoft.Xna.Framework.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Xna.Framework.Game">
-      <HintPath>..\Reference\xna\Microsoft.Xna.Framework.Game.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>C:\Users\jcm\Documents\projects\FsReactive\Reference\xna\Microsoft.Xna.Framework.Game.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core" />
     <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Rectangles.fs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Common\Common.fsproj">
       <Name>Common</Name>
       <Project>{d9e07920-e4dd-4fcf-8569-10ca382bbb12}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\FsReactive\FsReactive.fsproj">
+      <Name>FsReactive</Name>
+      <Project>{f1227606-ce8d-42d1-9ebe-9e5db6fbfceb}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Xna\Xna.fsproj">
+      <Name>Xna</Name>
+      <Project>{9b9cac5f-7ffb-4d07-9a3a-31ad2dd51710}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.
 	<Target Name="BeforeBuild">
