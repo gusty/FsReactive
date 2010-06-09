@@ -31,40 +31,32 @@ namespace Rectangles
     currentRec : Rect option
     }
 
-    
         
-  let rec mouseLeftButtonB = let rec  b = (Beh (fun _ ->( Mouse.GetState().LeftButton.Equals(ButtonState.Pressed), fun () -> b))) 
-                             b |> memoB
-  let rec mouseRightButtonB = let rec b = (Beh (fun _ -> ( Mouse.GetState().RightButton.Equals(ButtonState.Pressed), fun () -> b))) 
-                              b |> memoB
+  let rec mouseLeftButtonB =  Beh (fun _ ->(Mouse.GetState().LeftButton.Equals(ButtonState.Pressed), fun () -> mouseLeftButtonB))
+                            
+  let rec mouseRightButtonB = Beh (fun _ -> ( Mouse.GetState().RightButton.Equals(ButtonState.Pressed), fun () -> mouseRightButtonB))
+                             
 
   let mainGame (game:Game) = 
 
         let mousePos = mousePos game
         let rec mousePosEvt = Evt (fun _ -> (mousePos(), fun() -> mousePosEvt))
         let mousePosB  = stepB (0.0, 0.0) mousePosEvt |> memoB
-        let mousePosXB = pureB fst <.> mousePosB
-        let mousePosYB = pureB snd <.> mousePosB
-        let rect = Rect (Vector (-0.5, -0.5), Vector (0.5, 0.5))
-        let leftClickE() = whenE mouseLeftButtonB //|> memoE
-        let rightClickE() = whenE mouseRightButtonB  //|> memoE
-//        let rec rectB = untilB (noneB()) (leftClickE =>> (fun _ -> rectB' ))
-        let leftClickE' = leftClickE()
-        let rightClickE' = rightClickE() 
+        let leftClickE = whenE mouseLeftButtonB |> memoE
+        let rightClickE = whenE mouseRightButtonB |> memoE
        
-        let rec rectB = untilB (noneB()) (snapshotBehaviorOnlyE (leftClickE') mousePosB =>> (fun (x, y) -> mkRect x y ))
-        and mkRect x y = 
+        let rec rectB () = 
+                untilB (noneB()) (snapshotBehaviorOnlyE (leftClickE)  mousePosB =>> (fun (x, y) -> mkRect x y))
+        and mkRect x y =
                 let movingRecB = (pureB  (fun (x, y) -> Rect (Vector (-x, -y), Vector (x, y))))
                                  <.> mousePosB
-                untilB (someizeBf movingRecB) (((leftClickE') (*.|. (rightClickE()) *) ) =>> (fun _ -> rectB ))
-//        let rectB' =  memoB (rectB |> tronB "rect = " )
-        let rectB' =  memoB (rectB  )
+                untilB (someizeBf movingRecB) ((leftClickE .|. (rightClickE)) =>> (fun _ -> rectB ()))
+        let rectB' = rectB ()
         let stepProc rect rects = 
             match rect with
             |Some rect -> rect :: rects
             |None -> rects
-        let newRectE = snapshotE    (rightClickE')  rectB' =>> (fun (_, rect) -> printf "%A \n" rect
-                                                                                 stepProc rect)
+        let newRectE = snapshotE    (rightClickE)  rectB' =>> (fun (_, rect) -> stepProc rect)
         let rectsB = stepAccumB [] newRectE
         (pureB (fun rects rect -> 
                     { rectangles = rects
@@ -98,44 +90,3 @@ namespace Rectangles
      game.Run()
 
 
-
-        (*
-        let mkVelocity t0 v0 accB hitE =
-            let rec proc t0 v0 e0 = 
-                let v0' = e0 t0 v0
-                let v = integrate accB t0 v0'
-                let fE = hitE --> (fun _ v -> -v)
-                Disc (v, fE, proc)
-            discontinuityE (proc t0 v0 (fun _ v -> -v))
-
-        let rec sys t0 x0 vx0 mousePosXB = 
-            let x' = aliasB x0
-            let vx' = aliasB x0
-            let hitE = whenE (condxf <.> (fst x'))
-            let accxB =  pureB 1.0 .* (mousePosXB .- (fst x')) .- (pureB 0.05 .* (fst vx')) 
-            let vx = bindAliasB (mkVelocity t0 vx0 accxB hitE) vx'
-                            
-            let x =  (bindAliasB (integrate vx t0 x0 ) x') 
-            x 
-        coupleB() <.> (sys 0.0 0.5 0.0  mousePosXB) <.> (sys 0.0 0.5 0.0 mousePosYB) // |>  tronB "x=" 
-
-        *)
-   (*     
-    let mkMovement t0 x0 velocityB =
-        let integrate = integrateGenB vectorNumClass
-        let rec proc t0 x0 e0 = 
-            let x0' = e0 t0 x0
-            let x = integrate velocityB t0 x0'
-            let boxE = (whileE ((pureB (inBoxPred >> not)) <.> x)) --> (fun _ x -> adaptToBox x)
-            Disc (x, boxE, proc)
-        discontinuityE (proc t0 x0 (fun _ x -> adaptToBox x))
-
- type Discontinuity<'a, 'b> = Disc of ('a Behavior *  (Time -> 'a -> 'b) Event * (Time -> 'a -> (Time -> 'a -> 'b) ->  Discontinuity<'a, 'b>))
-    
- let rec discontinuityE (Disc (xB, predE, bg))  = 
-        let evt = snapshotE predE ((coupleB() <.> timeB <.> xB))  =>>  
-                        (fun (e,(t,vb)) -> let disc = bg t vb e
-                                           discontinuityE disc)
-        untilB xB evt
-
-        *) 

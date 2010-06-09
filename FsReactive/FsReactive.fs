@@ -55,22 +55,6 @@ namespace FsReactive
     and resB = Evt bf
     resB
 
-    (*
-  let memoE b =
-    let cache = ref None
-    let bref = ref (fun()->b)
-    let compute b t = let (r, nb) = atE b t
-                      cache := Some (t, r);
-                      (r, nb)
-    let rec bf   t = match !cache with
-                     |Some (t0, r) when t=t0 -> (r, resB)
-                     |Some (t0, r) when t<t0 -> failwith "error"
-                     |_ ->  match compute b t with
-                            (r, nb) -> bref := nb
-                                       (r, resB)
-    and resB() = Evt bf
-    resB()
-    *)
 
 // applicative functor 
     
@@ -79,7 +63,7 @@ namespace FsReactive
   let rec (<.>) (Beh f) (Beh baf) = 
     let rec bf t = let (r,nb) = baf t
                    let (rf, nbf) = f t
-                   (rf r, fun () -> (nbf()) <.> (nb()))
+                   (rf r, fun () -> nbf () <.>  nb ())
     Beh bf
 
   let rec pureE f = Evt (fun t -> (Some f, fun() -> pureE f))
@@ -88,8 +72,8 @@ namespace FsReactive
     let rec bf t = let (r,nb) = baf t
                    let (rfo, nbf) = f t
                    match rfo with
-                   |Some rf -> (rf r, fun () -> (nbf()) <..> (nb()))
-                   |None -> (None, fun () -> (nbf()) <..> (nb())) 
+                   |Some rf -> (rf r, fun () -> (nbf()) <..> nb ())
+                   |None -> (None, fun () -> (nbf()) <..> nb ()) 
     Evt bf
 
 
@@ -120,6 +104,7 @@ namespace FsReactive
 
 // val untilB : 'a Behavior -> 'a Behavior Event -> 'a Behavior
 
+(*
   let rec untilB b e =
     let     bf t =  let (r, nb) = atB b t
                     let proc() = let (re, ne) = atE e t
@@ -128,10 +113,24 @@ namespace FsReactive
                                  |Some newB -> newB
                     (r, proc)
     Beh bf
+*)
+
+
+  let rec untilB b e =
+    let rec bf b e t =  let (r, nb) = atB b t
+                        let proc() = let (re, ne) = atE e t
+                                     match re with
+                                     |None -> Beh (bf  (nb()) (ne()))
+                                     |Some newB ->  ne ()
+                                                    newB
+                        (r, proc)
+    Beh (bf b e)
+
+
 
 // events
 
-  let rec NoneE = Evt (fun t -> (None, fun() -> NoneE))
+  let rec noneE = Evt (fun t -> (None, fun() -> noneE))
   let rec someE v = Evt (fun t -> (Some v, fun() -> someE v))
 
 // val ( =>> ) : 'a Event -> ('a -> 'b) -> 'b Event
@@ -224,7 +223,7 @@ namespace FsReactive
 
   let rec iterE evt l =  
     match l with 
-    |[] -> NoneE
+    |[] -> noneE
     |head::tail  -> let bf t = let (re, ne) = atE evt t
                                match re with
                                |Some v -> (Some (v,head), fun() -> iterE (ne()) tail)
@@ -236,7 +235,7 @@ namespace FsReactive
                     
   let rec loopE evt l =  
     match l with 
-    |[] -> NoneE
+    |[] -> noneE
     |head::tail  -> let bf t = let (re, ne) = atE evt t
                                match re with
                                |Some v -> (Some (v,head), fun() -> loopE (ne()) (tail @ [head]))

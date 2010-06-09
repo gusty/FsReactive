@@ -108,7 +108,7 @@ namespace FsReactive
                   
   let rec waitE delta = 
     let rec bf2 tend t = if t >= tend 
-                         then (Some (), fun () -> NoneE)
+                         then (Some (), fun () -> noneE)
                          else (None, fun () -> Evt (bf2 tend))
     let bf t = (None, fun () -> Evt (bf2 (t+delta)))
     Evt bf
