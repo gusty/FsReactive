@@ -25,7 +25,7 @@ namespace DynCol
         let tmax = 2.0
         let bf t = let tmax = t+dt
                    let rec bf' t = if (t < tmax) then (None, fun () -> Evt bf')
-                                                 else (Some (), fun () -> NoneE)
+                                                 else (Some (), fun () -> noneE)
                    (None, fun () -> Evt bf')
         Evt bf
            

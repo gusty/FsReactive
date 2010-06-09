@@ -131,7 +131,7 @@ namespace Bricks
 
     let mkBricks hitsB = 
         let brickBs = List.map (fun pos -> mkBrick (Vector pos) hitsB) bricksCoord
-        dyncolB brickBs NoneE
+        dyncolB brickBs noneE
          
     let mkVelocity v0 hitsB ballB xPaddleB ballRadius = 
         let applyB = (pureB (fun f b -> f b))
