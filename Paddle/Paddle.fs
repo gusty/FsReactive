@@ -51,8 +51,7 @@ namespace Paddle
                 let yball' = aliasB yball0
                 let rec condxE = (whenE (condxf <.> (fst xball'))) --> (fun x -> -x)
                 let vballx = stepAccumB (0.3) condxE
-                let rec condyE = (whenE (condyf <.> (fst xball') <.> (fst yball') <.> xpad)) --> (fun x -> printf "r\n"
-                                                                                                           -x)
+                let rec condyE = (whenE (condyf <.> (fst xball') <.> (fst yball') <.> xpad)) --> (fun x -> -x)
                 let vbally = stepAccumB (-0.45) condyE
 
                 let xball = memoB ( bindAliasB (integrate vballx t0   xball0) xball' )
