@@ -86,6 +86,7 @@ namespace Rectangles
         let stateB = mainGame game
         (pureB renderer) <.> stateB 
 
+
   do use game = new XnaTest2(renderedGame)
      game.Run()
 
