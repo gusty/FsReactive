@@ -104,16 +104,7 @@ namespace FsReactive
 
 // val untilB : 'a Behavior -> 'a Behavior Event -> 'a Behavior
 
-(*
-  let rec untilB b e =
-    let     bf t =  let (r, nb) = atB b t
-                    let proc() = let (re, ne) = atE e t
-                                 match re with
-                                 |None -> untilB (nb()) (ne())
-                                 |Some newB -> newB
-                    (r, proc)
-    Beh bf
-*)
+
 
 
   let rec untilB b e =
