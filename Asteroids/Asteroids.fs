@@ -168,7 +168,7 @@ namespace Asteroids
   
 
     // create a bullet option with the initial position = x0 at time = t0 with the velocity = bulletVelocityB.
-    // the bullet lifetime ends when after a given time or when it hits a meteor
+    // the bullet lifetime ends after a given time or when it hits a meteor
     let mkBullet t0 x0 bulletVelocityB hitsB =
         let bulletPos = mkMovement t0 x0 bulletVelocityB 
         let bulletB =   let id = (createId())
@@ -282,7 +282,7 @@ namespace Asteroids
 
     // scale used during a ship explosion
     
-    // create an explding ship
+    // create an exploding ship
     let rec mkDestroyedShip shipB hitB  = 
         let scaleB() = stepB 0.1 (iterE (whenE (periodicB 0.01)) [ 0.2; 0.3; 0.4; 0.7; 0.9; 1.1; 1.4; 1.7; 2.0; 0.0] =>> snd)
         let proc shipOption =

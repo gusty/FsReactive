@@ -60,8 +60,8 @@
       <Project>{f1227606-ce8d-42d1-9ebe-9e5db6fbfceb}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\xna\Xna.fsproj">
-      <Name>xna</Name>
+    <ProjectReference Include="..\Xna\Xna.fsproj">
+      <Name>Xna</Name>
       <Project>{9b9cac5f-7ffb-4d07-9a3a-31ad2dd51710}</Project>
       <Private>True</Private>
     </ProjectReference>
