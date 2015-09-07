@@ -57,7 +57,7 @@ namespace Spring
 
   let renderer (x, y) (gd:GraphicsDevice) = 
         let n_verts = 2
-        let random_vert _ = Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
+        let random_vert _ = Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
         let vertex = Array.init n_verts random_vert
         vertex.[1].Position <- Vector3((float32)x, (float32)y, (float32) 0.0)
         gd.DrawUserPrimitives(PrimitiveType.LineList, vertex, 0, n_verts/2)

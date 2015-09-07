@@ -48,9 +48,8 @@ namespace Xna
         base.Initialize()
         this.IsMouseVisible <- true
         let gd = graphics.GraphicsDevice
-        effect <- new Graphics.BasicEffect(gd, null)
-        let elts = Graphics.VertexPositionColor.VertexElements
-        vertexDeclaration <- new Graphics.VertexDeclaration(gd, elts)
+        effect <- new Graphics.BasicEffect(gd)
+        let elts = Graphics.VertexPositionColor.VertexDeclaration.GetVertexElements()
     
         let cameraPos = new Vector3((float32)0.0, (float32)0.0, (float32)5.0);
 
@@ -62,20 +61,16 @@ namespace Xna
  
     override this.Draw gameTime =
         let (gd:GraphicsDevice) = graphics.GraphicsDevice
-        gd.VertexDeclaration <- this.VertexDeclaration 
-        gd.Clear Graphics.Color.Black
+        gd.Clear Color.Black
    
         do  let t0 = DateTime.Now;
             let nb = (this.Behavior())
             let (renderf, nb) = atB nb (this.Time)
             this.Behavior <- nb
             this.Time <- this.Time + (1.0/60.0)
-            effect.Begin()
             for pass in effect.CurrentTechnique.Passes do
-                     pass.Begin()
+                     pass.Apply()
                      renderf gd
-                     pass.End()
-            effect.End()
     with
     
         member this.Graphics with get() = graphics

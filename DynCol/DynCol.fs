@@ -79,7 +79,7 @@ namespace DynCol
         let angles = Seq.toList (seq{for i in 1 .. 11 -> Math.PI*2.0*((float)i)/10.0})
         let pts = List.map (fun a-> (Vector.rot Vector.unit a) * ballRadius) angles
         let n_verts = List.length pts
-        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
+        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
         let vertex = Array.init n_verts random_vert
         let iter f      = List.iteri (fun i (Vector(x,y)) -> let (x', y') = f x y
                                                              vertex.[i].Position <- Vector3((float32)x', (float32)y', (float32) 0.0))        

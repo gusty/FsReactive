@@ -66,7 +66,7 @@ namespace Rectangles
 
   let drawRectangle (Rect ((Vector (x0, y0)), (Vector (x1, y1)))) (gd:GraphicsDevice) = 
         let n_verts = 5
-        let random_vert _ = Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
+        let random_vert _ = Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
         let vertex = Array.init n_verts random_vert
         vertex.[0].Position <- Vector3((float32)x0, (float32)y0, (float32) 0.0)
         vertex.[1].Position <- Vector3((float32)x0, (float32)y1, (float32) 0.0)

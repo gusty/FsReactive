@@ -12,11 +12,11 @@ namespace Asteroids
   let drawShip (gd:GraphicsDevice) scale = 
         let pts = List.map (fun (x,y) -> (x/40.0, y/40.0)) [(-2.0, 2.0);(4.0, 0.0);(-2.0, -2.0);(0.0, 0.0);(-2.0, 2.0)]
         let n_verts = List.length pts
-        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
+        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
         let vertex = Array.init n_verts random_vert
 
         let jet_n_verts = 3
-        let jet_random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
+        let jet_random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
         let jet_vertex = Array.init jet_n_verts jet_random_vert
 
         let iter f pts (vertex: VertexPositionColor[]) = 
@@ -52,7 +52,7 @@ namespace Asteroids
         let dirs = List.map (fun (x,y) -> (x/40.0, y/40.0)) [(1.0, 1.0); (1.0, -1.0); (-1.0, -1.0); (-1.0, 1.0)]
 
         let n_verts = List.length pts * 2
-        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
+        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
         let vertex = Array.init n_verts random_vert
 
         let iter f pts (vertex: VertexPositionColor[]) = 
@@ -78,7 +78,7 @@ namespace Asteroids
         let ptsM = List.map (fun a-> (Vector.rot Vector.unit a) * (2.0/30.0)) angles
         let ptsS = List.map (fun a-> (Vector.rot Vector.unit a) * (2.0/40.0)) angles
         let n_verts = List.length ptsB
-        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
+        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
         let vertex = Array.init n_verts random_vert
         let iter f size = List.iteri (fun i (Vector(x,y)) -> let (x', y') = f x y
                                                              vertex.[i].Position <- Vector3((float32)x', (float32)y', (float32) 0.0))        
@@ -97,16 +97,16 @@ namespace Asteroids
   let drawShield (gd:GraphicsDevice) = 
         let angles = Seq.toList (seq{for i in 1 .. 31 -> Math.PI*2.0*((float)i)/30.0})
         let pts = List.map (fun a-> (Vector.rot Vector.unit a) * 0.12) angles
-        let n_verts = List.length pts
-        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
-        let vertex = Array.init n_verts random_vert
+        let n_verts = List.length pts * 2
+        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
+        let vertex = Array.init (n_verts * 2) random_vert
         let iter f  = List.iteri (fun i (Vector(x,y)) -> let (x', y') = f x y
-                                                         vertex.[i].Position <- Vector3((float32)x', (float32)y', (float32) 0.0))       
+                                                         vertex.[i/2].Position <- Vector3((float32)x', (float32)y', (float32) 0.0))       
                                      
         let draw (gd:GraphicsDevice) x y  = 
             let f x' y' = x + x', y + y'          
             iter f pts
-            gd.DrawUserPrimitives(PrimitiveType.PointList, vertex, 0, n_verts)
+            gd.DrawUserPrimitives(PrimitiveType.LineList, vertex, 0, n_verts)
         draw  gd   
  
   let drawShield' (gd:GraphicsDevice) shieldOn ship = 
@@ -116,13 +116,14 @@ namespace Asteroids
 
 
   let drawBullet (gd:GraphicsDevice) = 
-        let n_verts = 1
-        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Graphics.Color.White)
+        let n_verts = 2
+        let random_vert _ =  Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
         let vertex = Array.init n_verts random_vert
-        let draw (gd:GraphicsDevice) x y =  
+        let draw (gd:GraphicsDevice) x y =
              vertex.[0].Position <- Vector3((float32)x, (float32)y, (float32) 0.0)
-             gd.DrawUserPrimitives(PrimitiveType.PointList, vertex, 0, n_verts)
-        draw gd                 
+             vertex.[1].Position <- Vector3((float32)x + 0.001f, (float32)y + 0.001f , (float32) 0.0)
+             gd.DrawUserPrimitives(PrimitiveType.LineList, vertex, 0, 1)
+        draw gd
 
   let drawBullet' (gd:GraphicsDevice) (Bullet (_, Vector(x, y))) =  drawBullet gd x y
  
