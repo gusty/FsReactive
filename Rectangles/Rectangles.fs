@@ -1,43 +1,40 @@
-﻿#light
+﻿namespace Rectangles
 
-namespace Rectangles
+module Main = 
+    open System
+    open FsReactive.Misc
+    open FsReactive.FsReactive
+    open FsReactive.Integration
+    open FsReactive.Lib
+    open Common.Vector
+    open Xna.Main
 
- module Main = 
-  open System
-  open FsReactive.Misc
-  open FsReactive.FsReactive
-  open FsReactive.Integration
-  open FsReactive.Lib
-  open Common.Vector
-  open Xna.Main
-
-  open Microsoft.Xna.Framework
-  open Microsoft.Xna.Framework.Graphics
-  open Microsoft.Xna.Framework.Input
+    open Microsoft.Xna.Framework
+    open Microsoft.Xna.Framework.Graphics
+    open Microsoft.Xna.Framework.Input
   
 
-  let (.*) a b = (pureB (*)) <.> a <.> b 
-  let (.-) a b = (pureB (-)) <.> a <.> b 
-  let (.+) a b = (pureB (+)) <.> a <.> b 
-  let cosB = pureB Math.Cos
-  let sinB = pureB Math.Sin
-  let (.<=) a b = pureB (<=) <.> a <.> b
-  let (.>=) a b = pureB (>=) <.> a <.> b
+    let (.*) a b = (pureB (*)) <.> a <.> b 
+    let (.-) a b = (pureB (-)) <.> a <.> b 
+    let (.+) a b = (pureB (+)) <.> a <.> b 
+    let cosB = pureB Math.Cos
+    let sinB = pureB Math.Sin
+    let (.<=) a b = pureB (<=) <.> a <.> b
+    let (.>=) a b = pureB (>=) <.> a <.> b
   
-  type Rect = Rect of (Vector * Vector)
+    type Rect = Rect of (Vector * Vector)
 
-  type State =  { 
-    rectangles : Rect list
-    currentRec : Rect option
-    }
+    type State = { 
+        rectangles : Rect list
+        currentRec : Rect option}
 
         
-  let rec mouseLeftButtonB =  Beh (fun _ ->(Mouse.GetState().LeftButton.Equals(ButtonState.Pressed), fun () -> mouseLeftButtonB))
+    let rec mouseLeftButtonB =  Beh (fun _ ->(Mouse.GetState().LeftButton.Equals(ButtonState.Pressed), fun () -> mouseLeftButtonB))
                             
-  let rec mouseRightButtonB = Beh (fun _ -> ( Mouse.GetState().RightButton.Equals(ButtonState.Pressed), fun () -> mouseRightButtonB))
+    let rec mouseRightButtonB = Beh (fun _ -> ( Mouse.GetState().RightButton.Equals(ButtonState.Pressed), fun () -> mouseRightButtonB))
                              
 
-  let mainGame (game:Game) = 
+    let mainGame (game:Game) = 
 
         let mousePos = mousePos game
         let rec mousePosEvt = Evt (fun _ -> (mousePos(), fun() -> mousePosEvt))
@@ -46,11 +43,11 @@ namespace Rectangles
         let rightClickE = whenE mouseRightButtonB |> memoE
        
         let rec rectB () = 
-                untilB (noneB()) (snapshotBehaviorOnlyE (leftClickE)  mousePosB =>> (fun (x, y) -> mkRect x y))
+            untilB (noneB()) (snapshotBehaviorOnlyE (leftClickE)  mousePosB =>> (fun (x, y) -> mkRect x y))
         and mkRect x y =
-                let movingRecB = (pureB  (fun (x, y) -> Rect (Vector (-x, -y), Vector (x, y))))
+            let movingRecB = (pureB  (fun (x, y) -> Rect (Vector (-x, -y), Vector (x, y))))
                                  <.> mousePosB
-                untilB (someizeBf movingRecB) ((leftClickE .|. (rightClickE)) =>> (fun _ -> rectB ()))
+            untilB (someizeBf movingRecB) ((leftClickE .|. (rightClickE)) =>> (fun _ -> rectB ()))
         let rectB' = rectB ()
         let stepProc rect rects = 
             match rect with
@@ -64,7 +61,7 @@ namespace Rectangles
                     })) <.> rectsB <.> rectB'
 
 
-  let drawRectangle (Rect ((Vector (x0, y0)), (Vector (x1, y1)))) (gd:GraphicsDevice) = 
+    let drawRectangle (Rect ((Vector (x0, y0)), (Vector (x1, y1)))) (gd:GraphicsDevice) = 
         let n_verts = 5
         let random_vert _ = Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
         let vertex = Array.init n_verts random_vert
@@ -76,18 +73,18 @@ namespace Rectangles
         gd.DrawUserPrimitives(PrimitiveType.LineStrip, vertex, 0, n_verts-1)
 
 
-  let renderer state (gd:GraphicsDevice) = 
+    let renderer state (gd:GraphicsDevice) = 
         match (state.currentRec, state.rectangles) with
-        |(Some r), rects -> drawRectangle r gd 
-                            List.iter (fun r -> drawRectangle r gd) rects
+        |(Some r), rects -> 
+            drawRectangle r gd 
+            List.iter (fun r -> drawRectangle r gd) rects
         |None, rects -> List.iter (fun r -> drawRectangle r gd) rects
 
-  let renderedGame (game:Game) = 
+    let renderedGame (game:Game) = 
         let stateB = mainGame game
         (pureB renderer) <.> stateB 
 
 
-  do use game = new XnaTest2(renderedGame)
-     game.Run()
-
-
+    do 
+        use game = new XnaTest2(renderedGame)
+        game.Run()

@@ -1,30 +1,28 @@
-﻿#light
+﻿namespace Spring
 
-namespace Spring
-
- module Game = 
-  open System
-  open FsReactive.Misc
-  open FsReactive.FsReactive
-  open FsReactive.Integration
-  open FsReactive.Lib
-  open Common.Random
-  open Xna.Main
-
-  open Microsoft.Xna.Framework
-  open Microsoft.Xna.Framework.Graphics
-  open Microsoft.Xna.Framework.Input
-  
-
-  let (.*) a b = (pureB (*)) <.> a <.> b 
-  let (.-) a b = (pureB (-)) <.> a <.> b 
-  let (.+) a b = (pureB (+)) <.> a <.> b 
-  let cosB = pureB Math.Cos
-  let sinB = pureB Math.Sin
-  let (.<=) a b = pureB (<=) <.> a <.> b
-  let (.>=) a b = pureB (>=) <.> a <.> b
-  
-  let mainGame (game:Game) = 
+module Game = 
+    open System
+    open FsReactive.Misc
+    open FsReactive.FsReactive
+    open FsReactive.Integration
+    open FsReactive.Lib
+    open Common.Random
+    open Xna.Main
+    
+    open Microsoft.Xna.Framework
+    open Microsoft.Xna.Framework.Graphics
+    open Microsoft.Xna.Framework.Input
+    
+    
+    let (.*) a b = (pureB (*)) <.> a <.> b 
+    let (.-) a b = (pureB (-)) <.> a <.> b 
+    let (.+) a b = (pureB (+)) <.> a <.> b 
+    let cosB = pureB Math.Cos
+    let sinB = pureB Math.Sin
+    let (.<=) a b = pureB (<=) <.> a <.> b
+    let (.>=) a b = pureB (>=) <.> a <.> b
+    
+    let mainGame (game:Game) = 
         let condxf = pureB (fun x -> x <= (-1.0) || x >= 1.0)
         let sidef f = pureB (fun x -> f x
                                       x)
@@ -55,7 +53,7 @@ namespace Spring
         coupleB() <.> (sys 0.0 0.5 0.0  mousePosXB) <.> (sys 0.0 0.5 0.0 mousePosYB) // |>  tronB "x=" 
 
 
-  let renderer (x, y) (gd:GraphicsDevice) = 
+    let renderer (x, y) (gd:GraphicsDevice) = 
         let n_verts = 2
         let random_vert _ = Graphics.VertexPositionColor(Vector3(0.f, 0.f, 0.f), Color.White)
         let vertex = Array.init n_verts random_vert
@@ -63,9 +61,10 @@ namespace Spring
         gd.DrawUserPrimitives(PrimitiveType.LineList, vertex, 0, n_verts/2)
 
 
-  let renderedGame (game:Game) = 
+    let renderedGame (game:Game) = 
         let stateB = mainGame game
         (pureB renderer) <.> stateB 
 
-  do use game = new XnaTest2(renderedGame)
-     game.Run() 
+    do 
+        use game = new XnaTest2(renderedGame)
+        game.Run()
