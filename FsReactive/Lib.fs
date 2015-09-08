@@ -11,20 +11,19 @@ module Lib =
  
     // runList : 'a Behavior -> Time list -> 'a list
 
-    let rec runList b l  =
-        match l with
-        |[] -> []
-        |h::t -> 
-            let (r, nb) = atB b h
+    let rec runList b = function
+        | []   -> []
+        | h::t -> 
+            let r, nb = atB b h
             r:: runList (nb()) t
             
     // tronB : 'a -> 'b Behavior -> 'b Behavior
 
     let rec tronB msg b = 
         let bf t = 
-            let (r, nb) = atB b t
+            let r, nb = atB b t
             printf "%A: (t = %f) val = %A \n" msg t r
-            (r, fun() -> tronB msg (nb()))
+            r, fun() -> tronB msg (nb())
         Beh bf
     
   
@@ -32,26 +31,23 @@ module Lib =
 
     let rec tronE msg e = 
         let bf t = 
-            let (r, ne) = atE e t
+            let r, ne = atE e t
             printf "%A: (t=%f) v=%A \n" msg t r
-            (r, fun() -> tronE msg (ne()))
+            r, fun() -> tronE msg (ne())
         Evt bf
         
     // some constants
-    let zeroB = pureB 0.0
-    let oneB = pureB 1.0
-    let twoB = pureB 2.0
+    let zeroB, oneB, twoB = pureB 0.0, pureB 1.0, pureB 2.0
   
     let piB = pureB Math.PI
   
-    let trueB = pureB true
-    let falseB = pureB false
+    let trueB, falseB  = pureB true, pureB false
  
-    let rec noneB() = Beh (fun _ -> (None, noneB))
+    let rec noneB() = Beh (fun _ -> None, noneB)
  
-    let couple x y = (x,y)
+    let couple x y = x, y
     let coupleB() = pureB couple 
-    let triple x y z= (x,y,z)
+    let triple x y z = x, y, z
     let tripleB() = pureB triple 
  
   
@@ -64,17 +60,17 @@ module Lib =
   
     let rec negB (a:Behavior<float>)  = pureB (fun x -> -x) <.> a
  
-    let (.>.) (a:Behavior<_>) b = pureB (>) <.> a <.> b
-    let (.<.) (a:Behavior<_>) b = pureB (<) <.> a <.> b
+    let (.>.)  (a:Behavior<_>) b = pureB (>)  <.> a <.> b
+    let (.<.)  (a:Behavior<_>) b = pureB (<)  <.> a <.> b
     let (.>=.) (a:Behavior<_>) b = pureB (>=) <.> a <.> b
     let (.<=.) (a:Behavior<_>) b = pureB (<=) <.> a <.> b
-    let (.=.) (a:Behavior<_>) b = pureB (=) <.> a <.> b
+    let (.=.)  (a:Behavior<_>) b = pureB (=)  <.> a <.> b
     let (.<>.) (a:Behavior<_>) b = pureB (<>) <.> a <.> b
 
     let (.&&.) (a:Behavior<_>) b = pureB (&&) <.> a <.> b
     let (.||.) (a:Behavior<_>) b = pureB (||) <.> a <.> b
 
-    let notB (a:Behavior<_>)  = pureB (not) <.> a 
+    let notB   (a:Behavior<_>)   = pureB not <.> a 
  
  
 
@@ -83,8 +79,8 @@ module Lib =
     // discontinuityE : Discontinuity<'a, 'b> -> 'a Behavior
 
     let rec discontinuityE (Disc (xB, predE, bg))  = 
-        let evt = snapshotE predE ((coupleB() <.> timeB <.> xB))  =>>  
-                        (fun (e,(t,vb)) -> 
+        let evt = snapshotE predE (coupleB() <.> timeB <.> xB)  =>>  
+                        (fun (e, (t, vb)) -> 
                             let disc = bg t vb e
                             discontinuityE disc)
         untilB xB evt
@@ -93,9 +89,9 @@ module Lib =
 
     let rec seqB ba bb = 
         let bf t = 
-            let (_, na) = atB ba t
-            let (b, nb) = atB bb t
-            (b, fun() -> seqB (na()) (nb()))
+            let _, na = atB ba t
+            let b, nb = atB bb t
+            b, fun() -> seqB (na()) (nb())
         Beh bf
                
 
@@ -110,12 +106,12 @@ module Lib =
 
     // waitE : Time -> unit Event
                   
-    let rec waitE delta = 
+    let waitE delta = 
         let rec bf2 tend t = 
             if t >= tend 
-            then (Some (), fun () -> noneE)
-            else (None, fun () -> Evt (bf2 tend))
-        let bf t = (None, fun () -> Evt (bf2 (t+delta)))
+            then Some (), fun () -> noneE
+            else None   , fun () -> Evt (bf2 tend)
+        let bf t = None , fun () -> Evt (bf2 (t+delta))
         Evt bf
 
     
@@ -130,16 +126,16 @@ module Lib =
     // periodicB : Time -> bool Behavior
  
     let rec periodicB period = 
-        let E2 = (someE ()) =>> (fun () -> periodicB period)
-        let E1 = (waitE period) --> ( untilB (pureB true) E2)
+        let E2 = someE () =>> (fun () -> periodicB period)
+        let E1 = waitE period --> untilB (pureB true) E2
         untilB (pureB false) E1
 
     let someizeBf b = (pureB Some) <.> b
 
     // delayB : 'a Behavior -> 'a -> 'a Behavior
 
-    let delayB b v0 = 
+    let delayB b v0 =
         let rec bf b v0 t = 
-            let (r, nb) = atB b t
-            (v0, fun () -> Beh (bf (nb()) r))
+            let r, nb = atB b t
+            v0, fun () -> Beh (bf (nb()) r)
         Beh (bf b v0)

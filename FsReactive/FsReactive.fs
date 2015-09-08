@@ -17,43 +17,28 @@ module FsReactive =
     let atE (Evt bf) = bf
 
 
-    // memoization of Behaviors
+    // memoization
 
-
-    let memoB b =
+    let private memoG unwrap wrap b =
         let cache = ref None
-        let bref = ref b
-        let compute b t = 
-            let (r, nb) = atB b t
+        let bref  = ref b
+        let compute x t = 
+            let r, nb = unwrap x t
             cache := Some (t, r)
-            (r, nb)
+            r, nb
         let rec bf t = match !cache with
-                        | Some (t0, r) when t=t0 -> (r, fun () -> resB)
-                        | Some (t0, r) when t<t0 -> failwith "error"
-                        | _ -> match compute !bref t with
-                                (r, nb) -> (r, fun () -> 
-                                                bref := nb()
-                                                resB)
-        and resB = Beh bf
+                        | Some (t0, r) when t = t0 -> r, fun () -> resB
+                        | Some (t0, r) when t < t0 -> failwith "error"
+                        | _ -> 
+                            let r, nb = compute !bref t
+                            r, fun () -> 
+                                    bref := nb()
+                                    resB
+        and resB = wrap bf
         resB
 
-    
-    let memoE b =
-        let cache = ref None
-        let bref = ref b
-        let compute b t = 
-            let (r, nb) = atE b t
-            cache := Some (t, r)
-            (r, nb)
-        let rec bf t = match !cache with
-                        | Some (t0, r) when t=t0 -> (r, fun () -> resB)
-                        | Some (t0, r) when t<t0 -> failwith "error"
-                        | _ -> match compute !bref t with
-                                (r, nb) -> (r, fun () -> 
-                                                bref := nb()
-                                                resB)
-        and resB = Evt bf
-        resB
+    let memoB x = x |> memoG (fun (Beh x) -> x) Beh
+    let memoE x = x |> memoG (fun (Evt x) -> x) Evt
 
 
     // applicative functor 
@@ -61,21 +46,20 @@ module FsReactive =
     let rec pureB f = Beh (fun t -> (f, fun() -> pureB f))
 
     let rec (<.>) (Beh f) (Beh baf) = 
-        let rec bf t = 
-            let (r,nb) = baf t
-            let (rf, nbf) = f t
-            (rf r, fun () -> nbf () <.>  nb ())
+        let bf t = 
+            let r, nb = baf t
+            let rf, nbf = f t
+            rf r, fun () -> nbf () <.>  nb ()
         Beh bf
 
     let rec pureE f = Evt (fun t -> (Some f, fun() -> pureE f))
 
     let rec (<..>) (Evt f) (Evt baf) = 
-        let rec bf t = 
-            let (r,nb) = baf t
-            let (rfo, nbf) = f t
-            match rfo with
-            | Some rf -> (rf r, fun () -> (nbf()) <..> nb ())
-            | None -> (None, fun () -> (nbf()) <..> nb ()) 
+        let bf t = 
+            let r, nb = baf t
+            match f t with
+            | Some rf, nbf -> rf r, fun () -> (nbf()) <..> nb ()
+            | None   , nbf -> None, fun () -> (nbf()) <..> nb ()
         Evt bf
 
 
@@ -88,72 +72,68 @@ module FsReactive =
     // deltaTimeB : Time -> Behavior 
 
     let deltaTimeB t0 = 
-        let rec bf t0 t = (t-t0, fun() -> Beh (bf t))
-        Beh (bf t0) 
+        let rec bf t0 t = t-t0, fun() -> Beh (bf t)
+        Beh (bf t0)
                      
 
 
     // switchB : 'a Behavior -> 'a Behavior Event -> 'a Behavior
 
-    let rec switchB b e =
-        let rec bf b e t = 
-            let (r,nb) = atB b t
-            let proc() = 
-                let (re, ne) = atE e t
-                match re with
-                |None -> Beh ( bf (nb()) (ne()))
-                |Some newB -> Beh ( bf newB (ne()))
-            (r, proc)           
+    let switchB b e =
+        let rec bf (Beh b) (Evt e) t = 
+            let r, nb = b t
+            let proc() =
+                match e t with
+                | None     , ne -> Beh (bf (nb()) (ne()))
+                | Some newB, ne -> Beh (bf  newB  (ne()))
+            r, proc
         Beh (bf b e)
 
     // val untilB : 'a Behavior -> 'a Behavior Event -> 'a Behavior
 
-    let rec untilB b e =
-        let rec bf b e t =  
-            let (r, nb) = atB b t
-            let proc() = 
-                let (re, ne) = atE e t
-                match re with
-                |None -> Beh (bf  (nb()) (ne()))
-                |Some newB ->  
-                    ne ()
+    let untilB b e =
+        let rec bf (Beh b) (Evt e) t =
+            let r, nb = b t
+            let proc() =
+                match e t with
+                | None     , ne -> Beh (bf (nb()) (ne()))
+                | Some newB, ne ->
+                    ne() |> ignore
                     newB
-            (r, proc)
+            r, proc
         Beh (bf b e)
 
 
 
     // events
 
-    let rec noneE = Evt (fun t -> (None, fun() -> noneE))
+    let rec noneE   = Evt (fun t -> (None  , fun() -> noneE  ))
     let rec someE v = Evt (fun t -> (Some v, fun() -> someE v))
 
     // val ( =>> ) : 'a Event -> ('a -> 'b) -> 'b Event
  
     let (=>>) evt f = 
-        let proc evt = 
-            match evt with
-            |Some evt -> Some (f evt) 
-            |None -> None
+        let proc = function
+            | Some evt -> Some (f evt) 
+            | None     -> None
         let rec bf evt t = 
-            let (r, nevt) = atE evt  t
-            (proc r, fun() -> (Evt (bf (nevt()) ) ))
+            let r, nevt = atE evt t
+            proc r, fun() -> Evt (bf (nevt()) )
         Evt (bf evt)
     
     
     // val ( --> ) : 'a Event -> 'b -> 'b Event
 
-    let rec (-->) ea b  =  ea =>> (fun _ -> b)
+    let (-->) ea b = ea =>> (fun _ -> b)
   
     // val snapshotE : 'a Event -> 'b Behavior -> ('a * 'b) Event
 
-    let rec snapshotE evt b =
-        let rec bf evt b t = 
-            let (r,nb) = atB b t
-            let (re,nevt) = atE evt t
-            match re with
-            | Some v -> (Some(v, r), fun() -> Evt (bf (nevt()) (nb()) ))
-            | None -> (None, fun() -> Evt (bf (nevt()) (nb()) ))
+    let snapshotE evt b =
+        let rec bf (Evt evt) (Beh b) t = 
+            let r, nb = b t
+            match evt t with
+            | Some v, nevt -> Some (v, r), fun() -> Evt (bf (nevt()) (nb()) )
+            | None  , nevt -> None       , fun() -> Evt (bf (nevt()) (nb()) )
         Evt (bf evt b)
 
     // val snapshotBehaviorOnlyE : 'a Event -> 'b Behavior -> 'b Event
@@ -167,44 +147,43 @@ module FsReactive =
  
     // val stepAccumB : 'a -> ('a -> 'a) Event -> 'a Behavior
 
-    let rec stepAccumB a evt = 
+    let rec stepAccumB a (Evt evt) = 
         let bf t = 
-            let (re, ne) = atE evt t
-            match re with
-            | Some f -> 
-                let na = f a
-                (na, fun() -> stepAccumB na (ne()) )
-            | None -> (a, fun() -> stepAccumB a (ne()) )
+            let re, ne = evt t
+            let a = match re with
+                    | Some f -> f a
+                    | None   ->   a
+            a, fun() -> stepAccumB a (ne())
         Beh bf
     
 
  
     // val ( .|. ) : 'a Event -> 'a Event -> 'a Event
      
-    let rec (.|.) ea eb = 
-        let proc ra rb = match (ra, rb) with
-                            | (Some _ , _) -> ra
-                            | (None , Some _) -> rb
-                            | (None , None) -> None
-        let bf ea eb t = 
-            let (ra, nea) = atE ea t
-            let (rb, neb) = atE eb t
-            (proc ra rb, fun() -> nea()  .|. neb() )
+    let rec  (.|.)  ea  eb  = 
+        let proc = function
+            | Some a, _      -> Some a
+            | None  , Some b -> Some b
+            | None  , None   -> None
+        let bf (Evt ea) (Evt eb) t = 
+            let ra, nea = ea t
+            let rb, neb = eb t
+            proc (ra, rb), fun() -> nea()  .|. neb()
         Evt (bf ea eb)
 
 
     // orE : ('a -> 'a -> 'a) -> 'a Event -> 'a Event -> 'a Event
 
-    let  orE comp ea eb = 
-        let proc ra rb = match (ra, rb) with
-                            | (Some a , Some b) -> Some (comp a b)
-                            | (Some _ , None) -> ra
-                            | (None , Some _) -> rb
-                            | (None , None) -> None
-        let rec bf ea eb t = 
-            let (ra, nea) = atE ea t
-            let (rb, neb) = atE eb t
-            (proc ra rb, fun() -> Evt (bf (nea()) (neb())) )
+    let orE comp ea eb = 
+        let proc = function
+            | Some a, Some b -> Some (comp a b)
+            | Some a, None   -> Some a
+            | None  , Some b -> Some b
+            | None  , None   -> None
+        let rec bf (Evt ea) (Evt eb) t = 
+            let ra, nea = ea t
+            let rb, neb = eb t
+            proc (ra, rb), fun() -> Evt (bf (nea()) (neb()))
         Evt (bf ea eb)
 
 
@@ -212,75 +191,67 @@ module FsReactive =
     // val ( .&. ) : 'a Event -> 'b Event -> ('a * 'b) Event
  
     let rec (.&.) ea eb = 
-        let proc ra rb = match (ra, rb) with
-                         | (Some va , Some vb) -> Some (va,vb)
-                         | _ -> None
+        let proc = function (Some va , Some vb) -> Some (va, vb) | _ -> None
         let bf ea eb t = 
-            let (ra, nea) = atE ea t
-            let (rb, neb) = atE eb t
-            (proc ra rb, fun() -> nea() .&. neb() )
+            let ra, nea = atE ea t
+            let rb, neb = atE eb t
+            proc (ra, rb), fun() -> nea() .&. neb()
         Evt (bf ea eb)
     
 
     // val iterE : 'a Event -> 'b list -> ('a * 'b) Event
 
-    let rec iterE evt l =  
-        match l with 
-        |[] -> noneE
-        |head::tail  -> 
+    let rec iterE (Evt evt) = function  
+        | []                -> noneE
+        | head::tail as lst -> 
             let bf t = 
-                let (re, ne) = atE evt t
+                let re, ne = evt t
                 match re with
-                | Some v -> (Some (v,head), fun() -> iterE (ne()) tail)
-                | None -> (None, fun() -> iterE (ne()) l)
-            Evt bf
+                | Some v -> Some (v, head), fun() -> iterE (ne()) tail
+                | None   -> None          , fun() -> iterE (ne()) lst
+            Evt bf  
                     
                     
     // val loopE : 'a Event -> 'b list -> ('a * 'b) Event
                     
-    let rec loopE evt l =  
-        match l with 
-        |[] -> noneE
-        |head::tail  -> 
+    let rec loopE (Evt evt) = function  
+        | []                -> noneE
+        | head::tail as lst -> 
             let bf t = 
-                let (re, ne) = atE evt t
+                let re, ne = evt t
                 match re with
-                | Some v -> (Some (v,head), fun() -> loopE (ne()) (tail @ [head]))
-                | None -> (None, fun() -> loopE (ne()) l)
+                | Some v -> Some (v,head), fun() -> loopE (ne()) (tail @ [head])
+                | None   -> None         , fun() -> loopE (ne()) lst
             Evt bf
+
 
     // val whileE : bool Behavior -> unit Event
 
-    let rec whileE b =
+    let rec whileE (Beh b) =
         let bf t = 
-            let (r,nb) = atB b t
-            if r 
-            then (Some (), fun() -> whileE (nb()))
-            else (None, fun() -> whileE (nb()))
+            let r, nb = b t
+            if r then Some (), fun() -> whileE (nb())
+            else      None   , fun() -> whileE (nb())
         Evt bf
 
 
     // val whenE : bool Behavior -> unit Event
 
     let whenE b =
-        let rec bf b previous t = 
-            let (r,nb) = atB b t
-            match (previous, r) with
-            | (false, true) -> (Some (), fun() -> Evt (bf (nb()) r))
-            | (false, false) -> (None, fun() -> Evt (bf (nb()) r))
-            | (true, true) -> (None, fun() -> Evt (bf (nb()) r))
-            | (true, false) -> (None, fun() -> Evt (bf (nb()) r))
+        let rec bf (Beh b) previous t = 
+            let r, nb = b t
+            match previous, r with
+            | false, true -> Some (), fun() -> Evt (bf (nb()) r)
+            | _           -> None   , fun() -> Evt (bf (nb()) r)
         Evt (bf b false)
 
 
     // val whenBehaviorE : 'a option Behavior -> 'a Event
 
     let whenBehaviorE b =
-        let rec bf b previous t = 
-            let (r,nb) = atB b t
-            match (previous, r) with
-            | (None, Some v) -> (Some v, fun() -> Evt (bf (nb()) r))
-            | (None, None) -> (None, fun() -> Evt (bf (nb()) r))
-            | (Some v1, Some v2) -> (None, fun() -> Evt (bf (nb()) r))
-            | (Some v, None) -> (None, fun() -> Evt (bf (nb()) r))
+        let rec bf (Beh b) previous t = 
+            let r, nb = b t
+            match previous, r with
+            | None, Some v -> Some v, fun() -> Evt (bf (nb()) r)
+            | _            -> None  , fun() -> Evt (bf (nb()) r)
         Evt (bf b None)
