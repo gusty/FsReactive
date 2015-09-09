@@ -17,18 +17,6 @@ module Game =
     open Microsoft.Xna.Framework.Graphics
     open Microsoft.Xna.Framework.Input
    
-
-    let vectorNumClass = {
-        plus  = curry Vector.(+)
-        minus = curry Vector.(-)
-        mult  = curry Vector.(*)
-        div   = curry Vector.(/)
-        neg   = Vector.neg }
-    // some general purpose utility function    
-    let (.*) a b = pureB vectorNumClass.mult  <.> a <.> b
-    let (./) a b = pureB vectorNumClass.div   <.> a <.> b
-    let (.+) a b = pureB vectorNumClass.plus  <.> a <.> b
-    let (.-) a b = pureB vectorNumClass.minus <.> a <.> b
     
 
     let rot90Clockwise     (Vector (x, y)) = Vector (y, -x)
@@ -191,7 +179,7 @@ module Game =
     let ballRadius = 0.05
 
     let rec mkBall xPaddleB hitsB ballRadius x0 t0  = 
-        let integrate = integrateGenB vectorNumClass
+        let integrate = integrateGenB (curry Vector.(*))
         let xB' = aliasB x0
         let v0 = Vector.rot Vector.unit (Math.PI/4.0) * 1.5
         let velB = mkVelocity v0 hitsB (fst xB') xPaddleB ballRadius

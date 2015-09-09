@@ -19,37 +19,22 @@ module Game =
     open Microsoft.Xna.Framework.Input
 
     
-    // vector num class required by integration
-
-    let vectorNumClass = {   
-            plus  = curry Vector.(+)
-            minus = curry Vector.(-)
-            mult  = curry Vector.(*)
-            div   = curry Vector.(/)
-            neg   = Vector.neg }
-
-    
     // return true is the point (x,y) is within a (-1, 1) box
-    let inBoxPred (Vector (x,y)) = 
+    let inBoxPred (Vector (x, y)) =
         let proc x = -1.0 <= x && x <= 1.0 
         if  proc x && proc y
         then  true
         else  //printf "out\n"
               false   
     let adaptToBox (Vector (x,y)) = 
-        let rec proc x = if x < -1.0 then proc (x+2.0) else if 1.0 < x then proc (x-2.0) else x 
+        let rec proc x = if x < -1.0 then proc (x+2.0) elif 1.0 < x then proc (x-2.0) else x 
         Vector (proc x, proc y) 
 
-    // some general purpose utility function    
-    let (.*) a b = pureB vectorNumClass.mult  <.> a <.> b 
-    let (./) a b = pureB vectorNumClass.div   <.> a <.> b 
-    let (.+) a b = pureB vectorNumClass.plus  <.> a <.> b 
-    let (.-) a b = pureB vectorNumClass.minus <.> a <.> b 
     
     // movement
 
     let mkMovement t0 x0 velocityB =
-        let integrate = integrateGenB vectorNumClass
+        let integrate = integrateGenB (curry Vector.(*))
         let rec proc t0 x0 e0 = 
             let x0' = e0 t0 x0
             let x = integrate velocityB t0 x0'
@@ -174,7 +159,7 @@ module Game =
 
     // make a new ship     
     let rec mkShipDynamics t0 angleB thrustB nbShipsB hitB =
-        let integrate = integrateGenB vectorNumClass
+        let integrate = integrateGenB (curry Vector.(*))
         let (.* ) (a:Behavior<Vector>) b = pureB (*) <.> a <.> b 
         let (.- ) (a:Behavior<Vector>) b = pureB (-) <.> a <.> b 
         
