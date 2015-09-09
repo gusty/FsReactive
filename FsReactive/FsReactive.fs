@@ -45,22 +45,28 @@ module FsReactive =
     
     let rec pureB f = Beh (fun t -> (f, fun() -> pureB f))
 
-    let rec (<.>) (Beh f) (Beh baf) = 
-        let bf t = 
-            let r, nb = baf t
-            let rf, nbf = f t
-            rf r, fun () -> nbf () <.>  nb ()
-        Beh bf
+    type Behavior<'a> with
+        static member (<.>) (Beh f, Beh baf) =
+            let rec (<.>) (Beh f) (Beh baf) = 
+                let bf t = 
+                    let r, nb = baf t
+                    let rf, nbf = f t
+                    rf r, fun () -> nbf () <.>  nb ()
+                Beh bf
+            (<.>) (Beh f) (Beh baf)
 
     let rec pureE f = Evt (fun t -> (Some f, fun() -> pureE f))
 
-    let rec (<..>) (Evt f) (Evt baf) = 
-        let bf t = 
-            let r, nb = baf t
-            match f t with
-            | Some rf, nbf -> rf r, fun () -> (nbf()) <..> nb ()
-            | None   , nbf -> None, fun () -> (nbf()) <..> nb ()
-        Evt bf
+    type Event<'a> with
+        static member (<..>) (Evt f, Evt baf) =
+            let rec (<..>) (Evt f) (Evt baf) = 
+                let bf t = 
+                    let r, nb = baf t
+                    match f t with
+                    | Some rf, nbf -> rf r, fun () -> (nbf()) <..> nb ()
+                    | None   , nbf -> None, fun () -> (nbf()) <..> nb ()
+                Evt bf
+            (<..>) (Evt f) (Evt baf)
 
 
     //Some common Behaviors
@@ -112,19 +118,21 @@ module FsReactive =
 
     // val ( =>> ) : 'a Event -> ('a -> 'b) -> 'b Event
  
-    let (=>>) evt f = 
-        let proc = function
-            | Some evt -> Some (f evt) 
-            | None     -> None
-        let rec bf evt t = 
-            let r, nevt = atE evt t
-            proc r, fun() -> Evt (bf (nevt()) )
-        Evt (bf evt)
+    type Event<'a> with
+        static member (=>>) (evt, f) =
+            let (=>>) evt f = 
+                let proc = function
+                    | Some evt -> Some (f evt) 
+                    | None     -> None
+                let rec bf evt t = 
+                    let r, nevt = atE evt t
+                    proc r, fun() -> Evt (bf (nevt()) )
+                Evt (bf evt)
+            (=>>) evt f
     
     
     // val ( --> ) : 'a Event -> 'b -> 'b Event
-
-    let (-->) ea b = ea =>> (fun _ -> b)
+    type Event<'a> with static member (-->) (ea:Event<_>, b) = ea =>> fun _ -> b
   
     // val snapshotE : 'a Event -> 'b Behavior -> ('a * 'b) Event
 
@@ -159,17 +167,20 @@ module FsReactive =
 
  
     // val ( .|. ) : 'a Event -> 'a Event -> 'a Event
-     
-    let rec  (.|.)  ea  eb  = 
-        let proc = function
-            | Some a, _      -> Some a
-            | None  , Some b -> Some b
-            | None  , None   -> None
-        let bf (Evt ea) (Evt eb) t = 
-            let ra, nea = ea t
-            let rb, neb = eb t
-            proc (ra, rb), fun() -> nea()  .|. neb()
-        Evt (bf ea eb)
+    
+    type Event<'a> with
+        static member (.|.) (ea, eb) =
+            let rec (.|.) ea eb = 
+                let proc = function
+                    | Some a, _      -> Some a
+                    | None  , Some b -> Some b
+                    | None  , None   -> None
+                let bf (Evt ea) (Evt eb) t = 
+                    let ra, nea = ea t
+                    let rb, neb = eb t
+                    proc (ra, rb), fun() -> nea()  .|. neb()
+                Evt (bf ea eb)
+            (.|.) ea eb
 
 
     // orE : ('a -> 'a -> 'a) -> 'a Event -> 'a Event -> 'a Event
@@ -189,14 +200,16 @@ module FsReactive =
 
 
     // val ( .&. ) : 'a Event -> 'b Event -> ('a * 'b) Event
- 
-    let rec (.&.) ea eb = 
-        let proc = function (Some va , Some vb) -> Some (va, vb) | _ -> None
-        let bf ea eb t = 
-            let ra, nea = atE ea t
-            let rb, neb = atE eb t
-            proc (ra, rb), fun() -> nea() .&. neb()
-        Evt (bf ea eb)
+    type Event<'a> with
+        static member (.&.) (ea, eb) = 
+            let rec (.&.) ea eb = 
+                let proc = function (Some va , Some vb) -> Some (va, vb) | _ -> None
+                let bf ea eb t = 
+                    let ra, nea = atE ea t
+                    let rb, neb = atE eb t
+                    proc (ra, rb), fun() -> nea() .&. neb()
+                Evt (bf ea eb)
+            (.&.) ea eb
     
 
     // val iterE : 'a Event -> 'b list -> ('a * 'b) Event
