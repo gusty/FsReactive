@@ -160,11 +160,9 @@ module Game =
     // make a new ship     
     let rec mkShipDynamics t0 angleB thrustB nbShipsB hitB =
         let integrate = integrateGenB (curry Vector.(*))
-        let (.* ) (a:Behavior<Vector>) b = pureB (*) <*> a <*> b 
-        let (.- ) (a:Behavior<Vector>) b = pureB (-) <*> a <*> b 
         
         let shipVelocityB' = aliasB Vector.zero
-        let accB = (pureB Vector.rot <*> thrustB <*> angleB) .-  (pureB (fun v -> v * shipFriction) <*> fst shipVelocityB') 
+        let accB = (pureB Vector.rot <*> thrustB <*> angleB) |-| (pureB (fun v -> v * shipFriction) <*> fst shipVelocityB') 
         let shipVelocityB = bindAliasB (integrate accB t0 Vector.zero) shipVelocityB'
         
         let shipPositionB' = aliasB Vector.zero

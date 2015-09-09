@@ -53,9 +53,9 @@ module Lib =
   
     // lifting of classical functions
  
-    let (|*|) (a:Behavior<float>) b = pureB (*) <*> a <*> b
-    let (|+|) (a:Behavior<float>) b = pureB (+) <*> a <*> b
-    let (|-|) (a:Behavior<float>) b = pureB (-) <*> a <*> b
+    let inline (|*|) (a:Behavior<_>) b = pureB (*) <*> a <*> b
+    let inline (|+|) (a:Behavior<_>) b = pureB (+) <*> a <*> b
+    let inline (|-|) (a:Behavior<_>) b = pureB (-) <*> a <*> b
  
     let (|>|)  (a:Behavior<_>) b = pureB (>)  <*> a <*> b
     let (|<|)  (a:Behavior<_>) b = pureB (<)  <*> a <*> b
