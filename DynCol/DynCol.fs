@@ -55,18 +55,18 @@ module Game =
                 else nx
             let rec x' = aliasB 0.0
             let rec y' = aliasB 0.0
-            let rec condxE = whenE (condxf <.> (fst x')) --> speedChange
-            let rec condyE = whenE (condyf <.> (fst y')) --> speedChange
+            let rec condxE = whenE (condxf <*> (fst x')) --> speedChange
+            let rec condyE = whenE (condyf <*> (fst y')) --> speedChange
             and speedx = stepAccumB (speedChange (randUnity()/3.0)) condxE          
             and speedy = stepAccumB (speedChange (randUnity()/3.0)) condyE          
             and x = bindAliasB (integrate speedx t0 0.0) x'
             and y = bindAliasB (integrate speedy t0 0.0) y'
-            let ballB =  (tripleB() <.> id <.> x <.> y)
-            let hitE = (pureB detectCol) <.> ballB <.> colB 
+            let ballB =  (tripleB() <*> id <*> x <*> y)
+            let hitE = (pureB detectCol) <*> ballB <*> colB 
             untilB (someizeBf ballB) (whenE hitE --> noneB())
         let colB' = aliasB []
         let newBallE = (snapshotE clickE timeB) 
-        let newBallE' = newBallE =>> ( fun (_, t0) -> [newBall t0 (fst colB')])
+        let newBallE' = newBallE |>> ( fun (_, t0) -> [newBall t0 (fst colB')])
         let colB = bindAliasB (dyncolB [] newBallE') colB'
         colB
 
@@ -90,7 +90,7 @@ module Game =
 
     let renderedGame (game:Game) = 
         let stateB = mainGame game
-        pureB renderer <.> stateB 
+        pureB renderer <*> stateB 
 
     do
         use game = new XnaTest2(renderedGame)

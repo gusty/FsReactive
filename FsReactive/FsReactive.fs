@@ -46,14 +46,14 @@ module FsReactive =
     let rec pureB f = Beh (fun t -> (f, fun() -> pureB f))
 
     type Behavior<'a> with
-        static member (<.>) (Beh f, Beh baf) =
-            let rec (<.>) (Beh f) (Beh baf) = 
+        static member (<*>) (Beh f, Beh baf) =
+            let rec (<*>) (Beh f) (Beh baf) = 
                 let bf t = 
                     let r, nb = baf t
                     let rf, nbf = f t
-                    rf r, fun () -> nbf () <.>  nb ()
+                    rf r, fun () -> nbf () <*>  nb ()
                 Beh bf
-            (<.>) (Beh f) (Beh baf)
+            (<*>) (Beh f) (Beh baf)
 
     let rec pureE f = Evt (fun t -> (Some f, fun() -> pureE f))
 
@@ -116,11 +116,11 @@ module FsReactive =
     let rec noneE   = Evt (fun t -> (None  , fun() -> noneE  ))
     let rec someE v = Evt (fun t -> (Some v, fun() -> someE v))
 
-    // val ( =>> ) : 'a Event -> ('a -> 'b) -> 'b Event
+    // val ( |>> ) : 'a Event -> ('a -> 'b) -> 'b Event
  
     type Event<'a> with
-        static member (=>>) (evt, f) =
-            let (=>>) evt f = 
+        static member (|>>) (evt, f) =
+            let (|>>) evt f = 
                 let proc = function
                     | Some evt -> Some (f evt) 
                     | None     -> None
@@ -128,11 +128,11 @@ module FsReactive =
                     let r, nevt = atE evt t
                     proc r, fun() -> Evt (bf (nevt()) )
                 Evt (bf evt)
-            (=>>) evt f
+            (|>>) evt f
     
     
     // val ( --> ) : 'a Event -> 'b -> 'b Event
-    type Event<'a> with static member (-->) (ea:Event<_>, b) = ea =>> fun _ -> b
+    type Event<'a> with static member (-->) (ea:Event<_>, b) = ea |>> fun _ -> b
   
     // val snapshotE : 'a Event -> 'b Behavior -> ('a * 'b) Event
 
@@ -146,11 +146,11 @@ module FsReactive =
 
     // val snapshotBehaviorOnlyE : 'a Event -> 'b Behavior -> 'b Event
 
-    let rec snapshotBehaviorOnlyE evt b = snapshotE evt b =>> (fun (_, x) -> x)
+    let rec snapshotBehaviorOnlyE evt b = snapshotE evt b |>> (fun (_, x) -> x)
      
     // val stepB : 'a -> 'a Event -> 'a Behavior
 
-    let stepB (a:'a) (evt:'a Event) = switchB (pureB a) (evt =>> pureB)
+    let stepB (a:'a) (evt:'a Event) = switchB (pureB a) (evt |>> pureB)
 
  
     // val stepAccumB : 'a -> ('a -> 'a) Event -> 'a Behavior

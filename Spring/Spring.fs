@@ -20,8 +20,8 @@ module Game =
         let mousePos = mousePos game
         let rec mousePosEvt = Evt (fun _ -> (mousePos(), fun() -> mousePosEvt))
         let mousePosB  = stepB (0.0, 0.0) mousePosEvt
-        let mousePosXB = pureB fst <.> mousePosB
-        let mousePosYB = pureB snd <.> mousePosB
+        let mousePosXB = pureB fst <*> mousePosB
+        let mousePosYB = pureB snd <*> mousePosB
 
         let mkVelocity t0 v0 accB hitE =
             let rec proc t0 v0 e0 =
@@ -34,12 +34,12 @@ module Game =
         let rec sys t0 x0 vx0 mousePosXB =
             let x'  = aliasB x0
             let vx' = aliasB x0
-            let hitE = whenE (condxf <.> fst x')
-            let accxB = pureB 1.0 .*. (mousePosXB .-. fst x') .-. (pureB 0.05 .*. fst vx')
+            let hitE = whenE (condxf <*> fst x')
+            let accxB = pureB 1.0 |*| (mousePosXB |-| fst x') |-| (pureB 0.05 |*| fst vx')
             let vx = bindAliasB (mkVelocity t0 vx0 accxB hitE) vx'
             let x  = bindAliasB (integrate vx t0 x0) x'
             x
-        coupleB() <.> sys 0.0 0.5 0.0 mousePosXB <.> sys 0.0 0.5 0.0 mousePosYB // |>  tronB "x=" 
+        coupleB() <*> sys 0.0 0.5 0.0 mousePosXB <*> sys 0.0 0.5 0.0 mousePosYB // |>  tronB "x=" 
 
 
     let renderer (x, y) (gd:GraphicsDevice) =
@@ -52,7 +52,7 @@ module Game =
 
     let renderedGame (game:Game) =
         let stateB = mainGame game
-        pureB renderer <.> stateB
+        pureB renderer <*> stateB
 
     do
         use game = new XnaTest2(renderedGame)

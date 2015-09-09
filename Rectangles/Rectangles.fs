@@ -34,18 +34,18 @@ module Main =
         let rightClickE = whenE mouseRightButtonB |> memoE
        
         let rec rectB () = 
-            untilB (noneB()) (snapshotBehaviorOnlyE leftClickE mousePosB =>> fun (x, y) -> mkRect x y)
+            untilB (noneB()) (snapshotBehaviorOnlyE leftClickE mousePosB |>> fun (x, y) -> mkRect x y)
         and mkRect x y =
-            let movingRecB = pureB (fun (x, y) -> Rect (Vector (-x, -y), Vector (x, y))) <.> mousePosB
-            untilB (someizeBf movingRecB) ((leftClickE .|. rightClickE) =>> fun _ -> rectB ())
+            let movingRecB = pureB (fun (x, y) -> Rect (Vector (-x, -y), Vector (x, y))) <*> mousePosB
+            untilB (someizeBf movingRecB) ((leftClickE .|. rightClickE) |>> fun _ -> rectB ())
         let rectB' = rectB ()
         let stepProc rect rects = 
             match rect with
             | Some rect -> rect :: rects
             | None      -> rects
-        let newRectE = snapshotE rightClickE rectB' =>> fun (_, rect) -> stepProc rect
+        let newRectE = snapshotE rightClickE rectB' |>> fun (_, rect) -> stepProc rect
         let rectsB = stepAccumB [] newRectE
-        pureB (fun rects rect -> {rectangles = rects; currentRec = rect }) <.> rectsB <.> rectB'
+        pureB (fun rects rect -> {rectangles = rects; currentRec = rect }) <*> rectsB <*> rectB'
 
 
     let drawRectangle (Rect ((Vector (x0, y0)), (Vector (x1, y1)))) (gd:GraphicsDevice) = 
@@ -69,7 +69,7 @@ module Main =
 
     let renderedGame (game:Game) = 
         let stateB = mainGame game
-        pureB renderer <.> stateB 
+        pureB renderer <*> stateB 
 
 
     do 

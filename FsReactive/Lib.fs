@@ -53,24 +53,19 @@ module Lib =
   
     // lifting of classical functions
  
-    let (.*.) (a:Behavior<float>) b = pureB (*) <.> a <.> b 
-    let (./.) (a:Behavior<float>) b = pureB (/) <.> a <.> b 
-    let (.+.) (a:Behavior<float>) b = pureB (+) <.> a <.> b 
-    let (.-.) (a:Behavior<float>) b = pureB (-) <.> a <.> b 
-  
-    let rec negB (a:Behavior<float>)  = pureB (fun x -> -x) <.> a
+    let (|*|) (a:Behavior<float>) b = pureB (*) <*> a <*> b
+    let (|+|) (a:Behavior<float>) b = pureB (+) <*> a <*> b
+    let (|-|) (a:Behavior<float>) b = pureB (-) <*> a <*> b
  
-    let (.>.)  (a:Behavior<_>) b = pureB (>)  <.> a <.> b
-    let (.<.)  (a:Behavior<_>) b = pureB (<)  <.> a <.> b
-    let (.>=.) (a:Behavior<_>) b = pureB (>=) <.> a <.> b
-    let (.<=.) (a:Behavior<_>) b = pureB (<=) <.> a <.> b
-    let (.=.)  (a:Behavior<_>) b = pureB (=)  <.> a <.> b
-    let (.<>.) (a:Behavior<_>) b = pureB (<>) <.> a <.> b
+    let (|>|)  (a:Behavior<_>) b = pureB (>)  <*> a <*> b
+    let (|<|)  (a:Behavior<_>) b = pureB (<)  <*> a <*> b
+    let (|>=|) (a:Behavior<_>) b = pureB (>=) <*> a <*> b
+    let (|<=|) (a:Behavior<_>) b = pureB (<=) <*> a <*> b
+    let (|=|)  (a:Behavior<_>) b = pureB (=)  <*> a <*> b
+    let (|<>|) (a:Behavior<_>) b = pureB (<>) <*> a <*> b
 
-    let (.&&.) (a:Behavior<_>) b = pureB (&&) <.> a <.> b
-    let (.||.) (a:Behavior<_>) b = pureB (||) <.> a <.> b
-
-    let notB   (a:Behavior<_>)   = pureB not <.> a 
+    let (|&&|) (a:Behavior<_>) b = pureB (&&) <*> a <*> b
+    let (||||) (a:Behavior<_>) b = pureB (||) <*> a <*> b
  
  
 
@@ -79,7 +74,7 @@ module Lib =
     // discontinuityE : Discontinuity<'a, 'b> -> 'a Behavior
 
     let rec discontinuityE (Disc (xB, predE, bg))  = 
-        let evt = snapshotE predE (coupleB() <.> timeB <.> xB)  =>>  
+        let evt = snapshotE predE (coupleB() <*> timeB <*> xB)  |>>  
                         (fun (e, (t, vb)) -> 
                             let disc = bg t vb e
                             discontinuityE disc)
@@ -126,11 +121,11 @@ module Lib =
     // periodicB : Time -> bool Behavior
  
     let rec periodicB period = 
-        let E2 = someE () =>> (fun () -> periodicB period)
+        let E2 = someE () |>> (fun () -> periodicB period)
         let E1 = waitE period --> untilB (pureB true) E2
         untilB (pureB false) E1
 
-    let someizeBf b = (pureB Some) <.> b
+    let someizeBf b = (pureB Some) <*> b
 
     // delayB : 'a Behavior -> 'a -> 'a Behavior
 
